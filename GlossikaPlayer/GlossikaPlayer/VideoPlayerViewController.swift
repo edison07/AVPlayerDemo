@@ -44,9 +44,11 @@ final class VideoPlayerViewController: UIViewController {
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        guard let windowScene = view.window?.windowScene else { return }
-        let newOrientation = windowScene.interfaceOrientation
-        updateFullScreenButtonIcon(for: newOrientation.isPortrait ? .portrait : .landscapeRight)
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            guard let self = self, let windowScene = self.view.window?.windowScene else { return }
+            let newOrientation = windowScene.interfaceOrientation
+            self.updateFullScreenButtonIcon(for: newOrientation.isPortrait ? .portrait : .landscapeRight)
+        })
     }
     
     override func viewDidLayoutSubviews() {
@@ -210,8 +212,13 @@ private extension VideoPlayerViewController {
     }
     
     func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
-        let iconName = (orientation == .portrait) ? IconConstants.portraitIcon : IconConstants.landscapeIcon
-        fullScreenButton.setImage(UIImage(systemName: iconName), for: .normal)
+        if orientation == .landscapeRight || orientation == .landscapeLeft {
+                tableView.isHidden = true
+            fullScreenButton.setImage(UIImage(systemName: IconConstants.landscapeIcon), for: .normal)
+            } else {
+                tableView.isHidden = false
+                fullScreenButton.setImage(UIImage(systemName: IconConstants.portraitIcon), for: .normal)
+            }
     }
     
     func showControlView() {

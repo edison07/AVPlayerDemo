@@ -2,6 +2,7 @@
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
+        <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -49,43 +50,40 @@
                                 <rect key="frame" x="0.0" y="59" width="393" height="221"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Jrc-Lr-4oe">
-                                        <rect key="frame" x="50" y="85.666666666666657" width="293" height="50"/>
+                                        <rect key="frame" x="50" y="91.666666666666657" width="293" height="38"/>
                                         <subviews>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="J8W-VJ-yMt" userLabel="Skip backward Button">
-                                                <rect key="frame" x="0.0" y="0.0" width="97.666666666666671" height="50"/>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tOV-4d-xZw">
+                                                <rect key="frame" x="0.0" y="0.0" width="97.666666666666671" height="38"/>
                                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                 <state key="normal">
-                                                    <imageReference key="image" image="10.arrow.trianglehead.counterclockwise" catalog="system" symbolScale="large"/>
+                                                    <imageReference key="image" image="backward.fill" catalog="system" symbolScale="medium"/>
+                                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20"/>
                                                 </state>
-                                                <buttonConfiguration key="configuration" style="plain">
-                                                    <imageReference key="image" image="10.arrow.trianglehead.counterclockwise" catalog="system" symbolScale="large"/>
-                                                    <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" configurationType="pointSize" pointSize="30"/>
-                                                </buttonConfiguration>
                                                 <connections>
-                                                    <action selector="didTapSkipBackwardButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="sLq-5R-Tbr"/>
+                                                    <action selector="didTapSkipBackwardButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="6vA-Z7-sgK"/>
                                                 </connections>
                                             </button>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qsT-em-C09">
-                                                <rect key="frame" x="97.666666666666657" y="0.0" width="97.666666666666657" height="50"/>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qsT-em-C09">
+                                                <rect key="frame" x="97.666666666666657" y="0.0" width="97.666666666666657" height="38"/>
                                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="plain">
+                                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                <state key="normal">
                                                     <imageReference key="image" image="play.fill" catalog="system" symbolScale="large"/>
-                                                    <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" configurationType="pointSize" pointSize="30"/>
-                                                </buttonConfiguration>
+                                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="30"/>
+                                                </state>
                                                 <connections>
                                                     <action selector="didTapPlayButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="nTa-f4-OCR"/>
                                                 </connections>
                                             </button>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hTk-Vv-1Xd" userLabel="Skip Forward Button">
-                                                <rect key="frame" x="195.33333333333334" y="0.0" width="97.666666666666657" height="50"/>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hTk-Vv-1Xd" userLabel="Skip Forward Button">
+                                                <rect key="frame" x="195.33333333333334" y="0.0" width="97.666666666666657" height="38"/>
                                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="plain">
-                                                    <imageReference key="image" image="10.arrow.trianglehead.clockwise" catalog="system" symbolScale="large"/>
-                                                    <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" configurationType="pointSize" pointSize="30"/>
-                                                </buttonConfiguration>
+                                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                <state key="normal">
+                                                    <imageReference key="image" image="forward.fill" catalog="system" symbolScale="medium"/>
+                                                    <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="20"/>
+                                                </state>
                                                 <connections>
                                                     <action selector="didTapSkipForwardButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="kZZ-zA-DeB"/>
                                                 </connections>
@@ -98,16 +96,13 @@
                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Vtd-QM-A2B">
-                                        <rect key="frame" x="317.66666666666669" y="150.66666666666666" width="60.333333333333314" height="60.333333333333343"/>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CA3-jO-nJu">
+                                        <rect key="frame" x="352.33333333333331" y="168.66666666666666" width="25.666666666666686" height="24.333333333333343"/>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                        <state key="normal" image="arrow.up.left.and.arrow.down.right.rectangle" catalog="system"/>
-                                        <buttonConfiguration key="configuration" style="plain" image="arrow.up.left.and.arrow.down.right.rectangle" catalog="system">
-                                            <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" configurationType="pointSize" pointSize="20"/>
-                                        </buttonConfiguration>
+                                        <state key="normal" image="arrow.up.left.and.arrow.down.right" catalog="system"/>
                                         <connections>
-                                            <action selector="didTapFullScreenButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="J7v-N1-xeH"/>
+                                            <action selector="didTapFullScreenButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="nwf-vX-oai"/>
                                         </connections>
                                     </button>
                                 </subviews>
@@ -117,14 +112,13 @@
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="centerY" secondItem="NiW-y4-N92" secondAttribute="centerY" id="ADe-dA-eo8"/>
                                     <constraint firstAttribute="bottom" secondItem="183-3z-Sgz" secondAttribute="bottom" constant="70" id="Eg3-m6-mvg"/>
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="leading" secondItem="NiW-y4-N92" secondAttribute="leading" constant="50" id="J9e-Lj-EnN"/>
-                                    <constraint firstAttribute="trailing" secondItem="Vtd-QM-A2B" secondAttribute="trailing" constant="15" id="Qhi-3S-iGq"/>
-                                    <constraint firstItem="Vtd-QM-A2B" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="183-3z-Sgz" secondAttribute="trailing" constant="8" symbolic="YES" id="UUr-lG-SDK"/>
+                                    <constraint firstAttribute="trailing" secondItem="CA3-jO-nJu" secondAttribute="trailing" constant="15" id="X9D-LO-mUT"/>
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="centerX" secondItem="NiW-y4-N92" secondAttribute="centerX" id="Yzt-j9-BC6"/>
-                                    <constraint firstAttribute="bottom" secondItem="Vtd-QM-A2B" secondAttribute="bottom" constant="10" id="ZvA-g2-aQi"/>
-                                    <constraint firstItem="Vtd-QM-A2B" firstAttribute="centerY" secondItem="183-3z-Sgz" secondAttribute="centerY" id="eCN-Mf-yah"/>
                                     <constraint firstAttribute="trailing" secondItem="Jrc-Lr-4oe" secondAttribute="trailing" constant="50" id="fVA-0K-at5"/>
+                                    <constraint firstItem="CA3-jO-nJu" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="183-3z-Sgz" secondAttribute="trailing" constant="15" id="fin-Tm-Dlk"/>
                                     <constraint firstAttribute="bottom" secondItem="183-3z-Sgz" secondAttribute="bottom" constant="30" id="gAL-DW-CpO"/>
                                     <constraint firstItem="183-3z-Sgz" firstAttribute="leading" secondItem="NiW-y4-N92" secondAttribute="leading" constant="15" id="hbh-6s-a74"/>
+                                    <constraint firstItem="CA3-jO-nJu" firstAttribute="centerY" secondItem="183-3z-Sgz" secondAttribute="centerY" id="mBH-m7-xWz"/>
                                     <constraint firstItem="183-3z-Sgz" firstAttribute="leading" secondItem="NiW-y4-N92" secondAttribute="leading" constant="15" id="nJK-j7-dVJ"/>
                                 </constraints>
                                 <variation key="default">
@@ -133,7 +127,6 @@
                                         <exclude reference="nJK-j7-dVJ"/>
                                         <exclude reference="Eg3-m6-mvg"/>
                                         <exclude reference="gAL-DW-CpO"/>
-                                        <exclude reference="ZvA-g2-aQi"/>
                                     </mask>
                                 </variation>
                                 <variation key="heightClass=compact-widthClass=compact">
@@ -146,7 +139,6 @@
                                     <mask key="constraints">
                                         <include reference="hbh-6s-a74"/>
                                         <include reference="gAL-DW-CpO"/>
-                                        <include reference="ZvA-g2-aQi"/>
                                     </mask>
                                 </variation>
                                 <connections>
@@ -272,14 +264,14 @@
                     <connections>
                         <outlet property="controlView" destination="NiW-y4-N92" id="qki-lF-6Ut"/>
                         <outlet property="durationTimeLabel" destination="183-3z-Sgz" id="LBm-fM-1Wc"/>
-                        <outlet property="fullScreenButton" destination="Vtd-QM-A2B" id="Oy5-WS-RxL"/>
+                        <outlet property="fullScreenButton" destination="CA3-jO-nJu" id="FrP-kh-XpB"/>
                         <outlet property="loadingIndicator" destination="ltJ-Lh-e7s" id="c3Y-Cl-YE8"/>
                         <outlet property="playPauseButton" destination="qsT-em-C09" id="9ca-DX-5Mt"/>
                         <outlet property="playerView" destination="zCx-eE-UgD" id="LTR-Lp-FZz"/>
                         <outlet property="progressSlider" destination="mhb-Xk-zey" id="TFW-4G-rTE"/>
                         <outlet property="seekBackgroundView" destination="hnT-3w-FgG" id="i3u-cd-Qzu"/>
                         <outlet property="seekTimeLabel" destination="8EJ-4h-AE9" id="lI9-Wn-nJr"/>
-                        <outlet property="skipBackwardButton" destination="J8W-VJ-yMt" id="Eum-bX-QkD"/>
+                        <outlet property="skipBackwardButton" destination="tOV-4d-xZw" id="2F3-ij-qpe"/>
                         <outlet property="skipForwardButton" destination="hTk-Vv-1Xd" id="Wje-Ng-pob"/>
                         <outlet property="tableView" destination="GGc-js-yVq" id="0Rf-yN-04L"/>
                     </connections>
@@ -300,9 +292,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="10.arrow.trianglehead.clockwise" catalog="system" width="119" height="128"/>
-        <image name="10.arrow.trianglehead.counterclockwise" catalog="system" width="119" height="128"/>
-        <image name="arrow.up.left.and.arrow.down.right.rectangle" catalog="system" width="128" height="93"/>
+        <image name="arrow.up.left.and.arrow.down.right" catalog="system" width="128" height="115"/>
+        <image name="backward.fill" catalog="system" width="128" height="76"/>
+        <image name="forward.fill" catalog="system" width="128" height="76"/>
         <image name="play.fill" catalog="system" width="120" height="128"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
