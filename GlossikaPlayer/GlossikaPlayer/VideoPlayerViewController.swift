@@ -22,8 +22,12 @@ final class VideoPlayerViewController: UIViewController {
     
     @IBOutlet weak var fullScreenButton: UIButton!
     @IBOutlet weak var playPauseButton: UIButton!
+    @IBOutlet weak var skipForwardButton: UIButton!
+    @IBOutlet weak var skipBackwardButton: UIButton!
     
     @IBOutlet weak var loadingIndicator: UIActivityIndicatorView!
+    
+    @IBOutlet weak var tableView: UITableView!
     
     private var viewModel = VideoPlayerViewModel()
     private var cancellables = Set<AnyCancellable>()
@@ -108,6 +112,8 @@ extension VideoPlayerViewController {
 // MARK: - Private Methods
 private extension VideoPlayerViewController {
     func setupUI() {
+        tableView.delegate = self
+        tableView.dataSource = self
         durationTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekBackgroundView.layer.cornerRadius = 15
@@ -127,7 +133,13 @@ private extension VideoPlayerViewController {
             .sink { [weak self] isPlaying in
                 let iconName = isPlaying ? "pause.fill" : "play.fill"
                 self?.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
-                isPlaying ? self?.fadeOutControlView() : self?.showControlView()
+                if isPlaying {
+                    if self?.fadeOutTask == nil {
+                        self?.fadeOutControlView()
+                    }
+                } else {
+                    self?.showControlView()
+                }
             }
             .store(in: &cancellables)
         
@@ -157,6 +169,28 @@ private extension VideoPlayerViewController {
             .sink { [weak self] errorMessage in
                 if let message = errorMessage {
                     self?.showErrorAlert(with: message)
+                }
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$media
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.tableView.reloadData()
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$controlsEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] enabled in
+                self?.playPauseButton.isEnabled = enabled
+                self?.progressSlider.isEnabled = enabled
+                self?.fullScreenButton.isEnabled = enabled
+                self?.skipForwardButton.isEnabled = enabled
+                self?.skipBackwardButton.isEnabled = enabled
+                if !enabled {
+                    self?.playPauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+                    self?.progressSlider.value = 0
                 }
             }
             .store(in: &cancellables)
@@ -196,16 +230,57 @@ private extension VideoPlayerViewController {
     func fadeOutControlView() {
         fadeOutTask?.cancel()
         fadeOutTask = Task {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+            } catch {
+                return
+            }
             await MainActor.run {
                 if self.viewModel.isPlaying && !self.controlView.isHidden {
                     self.controlView.isHidden = true
                 }
+                self.fadeOutTask = nil
             }
         }
     }
     
+    
     func showErrorAlert(with message: String) {
         ErrorAlertManager.showErrorAlert(on: self, message: message)
+    }
+}
+
+extension VideoPlayerViewController: UITableViewDataSource {
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return viewModel.media?.categories.count ?? 0
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return viewModel.media?.categories[section].videos.count ?? 0
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return viewModel.media?.categories[section].name
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row] else {
+            return UITableViewCell()
+        }
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "VideoListTableViewCell", for: indexPath) as! VideoListTableViewCell
+        cell.configure(with: video)
+        
+        return cell
+    }
+}
+
+extension VideoPlayerViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row],
+              let urlString = video.sources.first,
+              let videoURL = URL(string: urlString) else { return }
+        
+        viewModel.updateVideo(with: videoURL)
     }
 }

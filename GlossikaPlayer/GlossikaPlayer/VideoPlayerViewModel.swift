@@ -15,20 +15,20 @@ final class VideoPlayerViewModel {
     @Published var currentTimeText: String = "00:00 / 00:00"
     @Published var seekTimeText: String = "00:00"
     @Published var errorMessage: String?
-    
+    @Published var media: VideoPlayerModel.MediaJSON?
+    @Published var controlsEnabled: Bool = true
+
     private var player: AVPlayer?
     private var playerLayer: AVPlayerLayer?
     private var cancellables = Set<AnyCancellable>()
     private var timeObserverToken: Any?
     var isSeeking: Bool = false
+    private let mediaService: MediaService
     
-    init() {
-        guard let videoURL = URL(string: AppConstants.videoURL) else { return }
-        let asset = AVURLAsset(url: videoURL)
-        let playerItem = AVPlayerItem(asset: asset)
-        self.player = AVPlayer(playerItem: playerItem)
-        observePlayerItem(playerItem)
-        setupTimeObserver()
+    init(mediaService: MediaService = MediaService()) {
+        self.mediaService = mediaService
+        self.player = AVPlayer()
+        fetchMediaData()
     }
     
     deinit {
@@ -55,15 +55,39 @@ final class VideoPlayerViewModel {
         playerLayer?.frame = frame
     }
     
+    func updateVideo(with url: URL) {
+        pause()
+        let asset = AVURLAsset(url: url)
+        let newItem = AVPlayerItem(asset: asset)
+        player?.replaceCurrentItem(with: newItem)
+        
+        resetObservers(for: newItem)
+        setupPlayer()
+    }
+    
     func togglePlayPause() {
-        guard let player = player else { return }
+        guard let player = player, let currentItem = player.currentItem else { return }
         if isPlaying {
             player.pause()
+            isPlaying = false
         } else {
-            player.play()
+            let currentTime = currentItem.currentTime().seconds
+            let duration = currentItem.duration.seconds
+            
+            if currentTime == duration {
+                player.seek(to: .zero) { [weak self] finished in
+                    if finished {
+                        player.play()
+                        self?.isPlaying = true
+                    }
+                }
+            } else {
+                player.play()
+                isPlaying = true
+            }
         }
-        isPlaying.toggle()
     }
+    
     
     func pause() {
         player?.pause()
@@ -132,12 +156,14 @@ private extension VideoPlayerViewModel {
                 case .readyToPlay:
                     self.isLoading = false
                     self.errorMessage = nil
+                    self.controlsEnabled = true
                 case .failed:
                     self.isLoading = false
+                    self.controlsEnabled = false
                     if let error = playerItem.error {
                         self.errorMessage = error.localizedDescription
                     } else {
-                        self.errorMessage = "影片讀取失敗"
+                        self.errorMessage = "Video failed to load."
                     }
                 default:
                     self.isLoading = true
@@ -163,5 +189,33 @@ private extension VideoPlayerViewModel {
         let minutes = Int(seconds) / 60
         let seconds = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    func fetchMediaData() {
+        Task {
+            do {
+                let mediaData = try await mediaService.fetchMedia()
+                self.media = mediaData
+                if
+                    let firstCategory = mediaData.categories.first,
+                    let firstVideo = firstCategory.videos.first,
+                    let urlString = firstVideo.sources.first,
+                    let videoURL = URL(string: urlString) {
+                    self.updateVideo(with: videoURL)
+                }
+                self.errorMessage = nil
+            } catch {
+                self.errorMessage = error.localizedDescription
+            }
+        }
+    }
+    
+    func resetObservers(for playerItem: AVPlayerItem) {
+        if let token = timeObserverToken {
+            player?.removeTimeObserver(token)
+            timeObserverToken = nil
+        }
+        observePlayerItem(playerItem)
+        setupTimeObserver()
     }
 }
