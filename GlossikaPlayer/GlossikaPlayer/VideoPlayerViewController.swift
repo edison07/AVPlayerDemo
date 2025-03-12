@@ -206,8 +206,6 @@ private extension VideoPlayerViewController {
     }
     
     func showErrorAlert(with message: String) {
-        let alert = UIAlertController(title: "錯誤", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "確定", style: .default))
-        present(alert, animated: true)
+        ErrorAlertManager.showErrorAlert(on: self, message: message)
     }
 }

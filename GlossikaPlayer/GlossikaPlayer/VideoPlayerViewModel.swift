@@ -23,7 +23,7 @@ final class VideoPlayerViewModel {
     var isSeeking: Bool = false
     
     init() {
-        guard let videoURL = URL(string: VideoPlayerModel.videoURL) else { return }
+        guard let videoURL = URL(string: AppConstants.videoURL) else { return }
         let asset = AVURLAsset(url: videoURL)
         let playerItem = AVPlayerItem(asset: asset)
         self.player = AVPlayer(playerItem: playerItem)
@@ -114,10 +114,10 @@ private extension VideoPlayerViewModel {
         let interval = CMTime(seconds: 1, preferredTimescale: 600)
         timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
-            guard !self.isSeeking else { return }
             let currentTime = time.seconds
             let duration = player.currentItem?.duration.seconds ?? 0
             self.currentTimeText = "\(self.formatTime(currentTime)) / \(self.formatTime(duration))"
+            guard !self.isSeeking else { return }
             if duration > 0 {
                 self.progress = currentTime / duration
             }
