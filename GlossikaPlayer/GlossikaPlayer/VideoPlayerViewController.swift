@@ -84,16 +84,24 @@ extension VideoPlayerViewController {
         updateFullScreenButtonIcon(for: newOrientationMask)
     }
     
-    @IBAction func progressSliderValueChanged(_ sender: UISlider) {
-        viewModel.seek(to: Double(sender.value))
-    }
-    
     @IBAction func progressSliderTouchDown(_ sender: UISlider) {
         seekBackgroundView.isHidden = false
+        viewModel.isSeeking = true
     }
     
     @IBAction func progressSliderTouchUpInside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
+        viewModel.seek(to: Double(sender.value))
+    }
+    
+    @IBAction func progressSliderTouchUpOutside(_ sender: UISlider) {
+        seekBackgroundView.isHidden = true
+        viewModel.seek(to: Double(sender.value))
+    }
+    
+    @IBAction func progressSliderValueChanged(_ sender: UISlider) {
+        let formattedTime = viewModel.formattedTime(for: Double(sender.value))
+        viewModel.seekTimeText = formattedTime
     }
 }
 

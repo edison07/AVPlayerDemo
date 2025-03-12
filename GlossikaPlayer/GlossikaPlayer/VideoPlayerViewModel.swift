@@ -20,6 +20,7 @@ final class VideoPlayerViewModel {
     private var playerLayer: AVPlayerLayer?
     private var cancellables = Set<AnyCancellable>()
     private var timeObserverToken: Any?
+    var isSeeking: Bool = false
     
     init() {
         guard let videoURL = URL(string: VideoPlayerModel.videoURL) else { return }
@@ -70,11 +71,17 @@ final class VideoPlayerViewModel {
     }
     
     func seek(to progress: Double) {
-        guard let playerItem = player?.currentItem else { return }
-        let durationSeconds = playerItem.duration.seconds
-        let newTimeSeconds = progress * durationSeconds
-        seekTimeText = formatTime(newTimeSeconds)
-        player?.seek(to: CMTime(seconds: newTimeSeconds, preferredTimescale: 600))
+        Task {
+            guard
+                let player = player ,
+                let playerItem = player.currentItem, playerItem.duration.seconds > 0 else { return }
+            let durationSeconds = playerItem.duration.seconds
+            let newTimeSeconds = progress * durationSeconds
+            let targetTime = CMTime(seconds: newTimeSeconds, preferredTimescale: 600)
+            
+            _ = await player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+            isSeeking = false
+        }
     }
     
     func skipForward(by seconds: Double = 10.0) {
@@ -90,6 +97,14 @@ final class VideoPlayerViewModel {
         let newTime = max(currentTime - seconds, 0)
         player.seek(to: CMTime(seconds: newTime, preferredTimescale: 600))
     }
+    
+    func formattedTime(for progress: Double) -> String {
+        guard let duration = player?.currentItem?.duration.seconds, duration > 0 else {
+            return "00:00"
+        }
+        let newTime = progress * duration
+        return formatTime(newTime)
+    }
 }
 
 // MARK: - Private Methods
@@ -99,6 +114,7 @@ private extension VideoPlayerViewModel {
         let interval = CMTime(seconds: 1, preferredTimescale: 600)
         timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
+            guard !self.isSeeking else { return }
             let currentTime = time.seconds
             let duration = player.currentItem?.duration.seconds ?? 0
             self.currentTimeText = "\(self.formatTime(currentTime)) / \(self.formatTime(duration))"
