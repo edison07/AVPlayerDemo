@@ -1,5 +1,5 @@
 //
-//  Untitled.swift
+//  ErrorAlertManager.swift
 //  GlossikaPlayer
 //
 //  Created by Edison on 2025/3/12.
