@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  VideoPlayerViewController.swift
 //  GlossikaPlayer
 //
 //  Created by Edison on 2025/3/10.
@@ -22,7 +22,7 @@ final class VideoPlayerViewController: UIViewController {
     
     @IBOutlet weak var fullScreenButton: UIButton!
     @IBOutlet weak var playPauseButton: UIButton!
-
+    
     @IBOutlet weak var loadingIndicator: UIActivityIndicatorView!
     
     private var viewModel = VideoPlayerViewModel()
@@ -32,29 +32,23 @@ final class VideoPlayerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupObserver()
         setupBindings()
+        setupNotifications()
         viewModel.attachPlayerLayer(to: playerView)
         viewModel.setupPlayer()
     }
     
-    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         guard let windowScene = view.window?.windowScene else { return }
-            
         let newOrientation = windowScene.interfaceOrientation
         updateFullScreenButtonIcon(for: newOrientation.isPortrait ? .portrait : .landscapeRight)
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        updatePlayerLayerFrame()
+        viewModel.updatePlayerLayerFrame(to: playerView.bounds)
     }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
-    }
-    
 }
 
 // MARK: - IBActions
@@ -81,11 +75,9 @@ extension VideoPlayerViewController {
     
     @IBAction func didTapFullScreenButton(_ sender: UIButton) {
         guard let windowScene = view.window?.windowScene else { return }
-        
         let currentOrientation = windowScene.interfaceOrientation
         let newOrientationMask: UIInterfaceOrientationMask = currentOrientation.isPortrait ? .landscapeRight : .portrait
         let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: newOrientationMask)
-        
         windowScene.requestGeometryUpdate(geometryPreferences) { error in
             print("Failed to change orientation: \(error.localizedDescription)")
         }
@@ -93,68 +85,41 @@ extension VideoPlayerViewController {
     }
     
     @IBAction func progressSliderValueChanged(_ sender: UISlider) {
-        viewModel.seek(to: Double(progressSlider.value))
+        viewModel.seek(to: Double(sender.value))
     }
     
     @IBAction func progressSliderTouchDown(_ sender: UISlider) {
         seekBackgroundView.isHidden = false
     }
+    
     @IBAction func progressSliderTouchUpInside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
     }
-    
 }
 
-// MARK: - Private
-extension VideoPlayerViewController {
-    private func setupUI() {
+// MARK: - Private Methods
+private extension VideoPlayerViewController {
+    func setupUI() {
         durationTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekBackgroundView.layer.cornerRadius = 15
         seekBackgroundView.clipsToBounds = true
     }
     
-    private func setupObserver() {
-        NotificationCenter.default.addObserver(self, selector: #selector(handleAppDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
-    }
-    
-    @objc private func handleAppDidEnterBackground() {
-        viewModel.pause()
-        showControlView()
-    }
-    
-    private func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
-        let iconName = (orientation == .portrait) ? "arrow.up.left.and.arrow.down.right.rectangle" : "arrow.down.right.and.arrow.up.left.rectangle"
-        fullScreenButton.setImage(UIImage(systemName: iconName), for: .normal)
-    }
-    
-    private func updatePlayerLayerFrame() {
-        viewModel.updatePlayerLayerFrame(to: playerView.bounds)
-    }
-
-    private func setupBindings() {
+    func setupBindings() {
         viewModel.$isLoading
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] isLoading in
-                    guard let self = self else { return }
-                    if isLoading {
-                        self.loadingIndicator.startAnimating()
-                    } else {
-                        self.loadingIndicator.stopAnimating()
-                    }
-                }
-                .store(in: &cancellables)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isLoading in
+                isLoading ? self?.loadingIndicator.startAnimating() : self?.loadingIndicator.stopAnimating()
+            }
+            .store(in: &cancellables)
         
         viewModel.$isPlaying
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isPlaying in
-                let icon = isPlaying ? "pause.fill" : "play.fill"
-                self?.playPauseButton.setImage(UIImage(systemName: icon), for: .normal)
-                if isPlaying {
-                    self?.fadeOutControlView()
-                } else {
-                    self?.showControlView()
-                }
+                let iconName = isPlaying ? "pause.fill" : "play.fill"
+                self?.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
+                isPlaying ? self?.fadeOutControlView() : self?.showControlView()
             }
             .store(in: &cancellables)
         
@@ -178,25 +143,50 @@ extension VideoPlayerViewController {
                 self?.seekTimeLabel.text = timeText
             }
             .store(in: &cancellables)
+        
+        viewModel.$errorMessage
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] errorMessage in
+                if let message = errorMessage {
+                    self?.showErrorAlert(with: message)
+                }
+            }
+            .store(in: &cancellables)
     }
     
-    private func showControlView() {
+    func setupNotifications() {
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .sink { [weak self] _ in
+                self?.handleAppDidEnterBackground()
+            }
+            .store(in: &cancellables)
+    }
+    
+    @objc func handleAppDidEnterBackground() {
+        viewModel.pause()
+        showControlView()
+    }
+    
+    func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
+        let iconName = (orientation == .portrait) ? IconConstants.portraitIcon : IconConstants.landscapeIcon
+        fullScreenButton.setImage(UIImage(systemName: iconName), for: .normal)
+    }
+    
+    func showControlView() {
         fadeOutTask?.cancel()
         controlView.isHidden = false
-        
         if viewModel.isPlaying {
             fadeOutControlView()
         }
     }
     
-    private func hideControlView() {
+    func hideControlView() {
         fadeOutTask?.cancel()
         controlView.isHidden = true
     }
     
-    private func fadeOutControlView() {
+    func fadeOutControlView() {
         fadeOutTask?.cancel()
-        
         fadeOutTask = Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             await MainActor.run {
@@ -205,5 +195,11 @@ extension VideoPlayerViewController {
                 }
             }
         }
+    }
+    
+    func showErrorAlert(with message: String) {
+        let alert = UIAlertController(title: "錯誤", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "確定", style: .default))
+        present(alert, animated: true)
     }
 }

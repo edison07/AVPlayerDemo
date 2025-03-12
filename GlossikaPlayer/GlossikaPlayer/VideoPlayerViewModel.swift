@@ -1,9 +1,10 @@
 //
-//  Untitled.swift
+//  VideoPlayerViewModel.swift
 //  GlossikaPlayer
 //
 //  Created by Edison on 2025/3/10.
 //
+
 import AVKit
 import Combine
 
@@ -13,17 +14,26 @@ final class VideoPlayerViewModel {
     @Published var progress: Double = 0.0
     @Published var currentTimeText: String = "00:00 / 00:00"
     @Published var seekTimeText: String = "00:00"
+    @Published var errorMessage: String?
     
     private var player: AVPlayer?
     private var playerLayer: AVPlayerLayer?
     private var cancellables = Set<AnyCancellable>()
+    private var timeObserverToken: Any?
     
     init() {
         guard let videoURL = URL(string: VideoPlayerModel.videoURL) else { return }
-        let playerItem = AVPlayerItem(url: videoURL)
+        let asset = AVURLAsset(url: videoURL)
+        let playerItem = AVPlayerItem(asset: asset)
         self.player = AVPlayer(playerItem: playerItem)
         observePlayerItem(playerItem)
         setupTimeObserver()
+    }
+    
+    deinit {
+        if let token = timeObserverToken {
+            player?.removeTimeObserver(token)
+        }
     }
     
     func setupPlayer() {
@@ -45,10 +55,11 @@ final class VideoPlayerViewModel {
     }
     
     func togglePlayPause() {
+        guard let player = player else { return }
         if isPlaying {
-            player?.pause()
+            player.pause()
         } else {
-            player?.play()
+            player.play()
         }
         isPlaying.toggle()
     }
@@ -58,65 +69,83 @@ final class VideoPlayerViewModel {
         isPlaying = false
     }
     
-    
-    func seek(to value: Double) {
-        let duration = player?.currentItem?.duration.seconds ?? 1
-        let newTime = value * duration
-        seekTimeText = self.formatTime(newTime)
-        player?.seek(to: CMTime(seconds: newTime, preferredTimescale: 600))
+    func seek(to progress: Double) {
+        guard let playerItem = player?.currentItem else { return }
+        let durationSeconds = playerItem.duration.seconds
+        let newTimeSeconds = progress * durationSeconds
+        seekTimeText = formatTime(newTimeSeconds)
+        player?.seek(to: CMTime(seconds: newTimeSeconds, preferredTimescale: 600))
     }
     
     func skipForward(by seconds: Double = 10.0) {
-        guard let player = player, let duration = player.currentItem?.duration.seconds else { return }
+        guard let player = player, let durationSeconds = player.currentItem?.duration.seconds else { return }
         let currentTime = player.currentTime().seconds
-        let newTime = min(currentTime + seconds, duration)
+        let newTime = min(currentTime + seconds, durationSeconds)
         player.seek(to: CMTime(seconds: newTime, preferredTimescale: 600))
     }
     
     func skipBackward(by seconds: Double = 10.0) {
-        guard let currentTime = player?.currentTime().seconds else { return }
+        guard let player = player else { return }
+        let currentTime = player.currentTime().seconds
         let newTime = max(currentTime - seconds, 0)
-        player?.seek(to: CMTime(seconds: newTime, preferredTimescale: 600))
+        player.seek(to: CMTime(seconds: newTime, preferredTimescale: 600))
     }
-    
 }
 
-// MARK: - Private
-extension VideoPlayerViewModel {
-    private func setupTimeObserver() {
+// MARK: - Private Methods
+private extension VideoPlayerViewModel {
+    func setupTimeObserver() {
         guard let player = player else { return }
-        
-        player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 600), queue: .main) { [weak self] time in
+        let interval = CMTime(seconds: 1, preferredTimescale: 600)
+        timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let currentTime = time.seconds
             let duration = player.currentItem?.duration.seconds ?? 0
-            self.currentTimeText = self.formatTime(currentTime) + " / " + self.formatTime(duration)
+            self.currentTimeText = "\(self.formatTime(currentTime)) / \(self.formatTime(duration))"
             if duration > 0 {
                 self.progress = currentTime / duration
             }
         }
     }
     
-    private func observePlayerItem(_ playerItem: AVPlayerItem) {
-           playerItem.publisher(for: \.status)
-               .sink { [weak self] status in
-                   guard let self = self else { return }
-                   self.isLoading = (status != .readyToPlay)
-               }
-               .store(in: &cancellables)
-
-           playerItem.publisher(for: \.isPlaybackLikelyToKeepUp)
-               .sink { [weak self] isLikelyToKeepUp in
-                   guard let self = self else { return }
-                   self.isLoading = !isLikelyToKeepUp
-               }
-               .store(in: &cancellables)
-       }
+    func observePlayerItem(_ playerItem: AVPlayerItem) {
+        playerItem.publisher(for: \.status)
+            .sink { [weak self] status in
+                guard let self = self else { return }
+                switch status {
+                case .readyToPlay:
+                    self.isLoading = false
+                    self.errorMessage = nil
+                case .failed:
+                    self.isLoading = false
+                    if let error = playerItem.error {
+                        self.errorMessage = error.localizedDescription
+                    } else {
+                        self.errorMessage = "影片讀取失敗"
+                    }
+                default:
+                    self.isLoading = true
+                }
+            }
+            .store(in: &cancellables)
+        
+        playerItem.publisher(for: \.isPlaybackLikelyToKeepUp)
+            .sink { [weak self] isLikelyToKeepUp in
+                self?.isLoading = !isLikelyToKeepUp
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            .sink { [weak self] _ in
+                self?.isPlaying = false
+            }
+            .store(in: &cancellables)
+    }
     
-    private func formatTime(_ seconds: Double) -> String {
+    func formatTime(_ seconds: Double) -> String {
         guard !seconds.isNaN else { return "00:00" }
         let minutes = Int(seconds) / 60
         let seconds = Int(seconds) % 60
-        return String(format: "\(minutes):%02d", seconds)
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
