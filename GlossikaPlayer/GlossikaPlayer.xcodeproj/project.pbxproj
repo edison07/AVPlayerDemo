@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		BE460DBC2D84E2DF00668856 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE84A2932D7E2CC300E3743A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE84A29A2D7E2CC300E3743A;
+			remoteInfo = GlossikaPlayer;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		BE460DB82D84E2DF00668856 /* GlossikaPlayerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlossikaPlayerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE84A29B2D7E2CC300E3743A /* GlossikaPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GlossikaPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +32,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		BE460DB92D84E2DF00668856 /* GlossikaPlayerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GlossikaPlayerTests;
+			sourceTree = "<group>";
+		};
 		BE84A29D2D7E2CC300E3743A /* GlossikaPlayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +48,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		BE460DB52D84E2DF00668856 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE84A2982D7E2CC300E3743A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				BE84A29D2D7E2CC300E3743A /* GlossikaPlayer */,
+				BE460DB92D84E2DF00668856 /* GlossikaPlayerTests */,
 				BE84A29C2D7E2CC300E3743A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				BE84A29B2D7E2CC300E3743A /* GlossikaPlayer.app */,
+				BE460DB82D84E2DF00668856 /* GlossikaPlayerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +86,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		BE460DB72D84E2DF00668856 /* GlossikaPlayerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE460DC02D84E2DF00668856 /* Build configuration list for PBXNativeTarget "GlossikaPlayerTests" */;
+			buildPhases = (
+				BE460DB42D84E2DF00668856 /* Sources */,
+				BE460DB52D84E2DF00668856 /* Frameworks */,
+				BE460DB62D84E2DF00668856 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BE460DBD2D84E2DF00668856 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BE460DB92D84E2DF00668856 /* GlossikaPlayerTests */,
+			);
+			name = GlossikaPlayerTests;
+			packageProductDependencies = (
+			);
+			productName = GlossikaPlayerTests;
+			productReference = BE460DB82D84E2DF00668856 /* GlossikaPlayerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		BE84A29A2D7E2CC300E3743A /* GlossikaPlayer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = BE84A2AE2D7E2CC500E3743A /* Build configuration list for PBXNativeTarget "GlossikaPlayer" */;
@@ -93,6 +141,10 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					BE460DB72D84E2DF00668856 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = BE84A29A2D7E2CC300E3743A;
+					};
 					BE84A29A2D7E2CC300E3743A = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -113,11 +165,19 @@
 			projectRoot = "";
 			targets = (
 				BE84A29A2D7E2CC300E3743A /* GlossikaPlayer */,
+				BE460DB72D84E2DF00668856 /* GlossikaPlayerTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		BE460DB62D84E2DF00668856 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE84A2992D7E2CC300E3743A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +188,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		BE460DB42D84E2DF00668856 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE84A2972D7E2CC300E3743A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,7 +204,51 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		BE460DBD2D84E2DF00668856 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE84A29A2D7E2CC300E3743A /* GlossikaPlayer */;
+			targetProxy = BE460DBC2D84E2DF00668856 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		BE460DBE2D84E2DF00668856 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L7834794L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.edison.GlossikaPlayerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GlossikaPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GlossikaPlayer";
+			};
+			name = Debug;
+		};
+		BE460DBF2D84E2DF00668856 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L7834794L5;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.edison.GlossikaPlayerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GlossikaPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GlossikaPlayer";
+			};
+			name = Release;
+		};
 		BE84A2AF2D7E2CC500E3743A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -318,6 +429,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		BE460DC02D84E2DF00668856 /* Build configuration list for PBXNativeTarget "GlossikaPlayerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE460DBE2D84E2DF00668856 /* Debug */,
+				BE460DBF2D84E2DF00668856 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		BE84A2962D7E2CC300E3743A /* Build configuration list for PBXProject "GlossikaPlayer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

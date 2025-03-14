@@ -9,14 +9,18 @@ import Foundation
 
 enum AppError: Error {
     case mediaNotFound
-    case decodingError(Error)
-    
-    var localizedDescription: String {
-        switch self {
-        case .mediaNotFound:
-            return "找不到媒體檔案"
-        case .decodingError(let error):
-            return "媒體檔案解析失敗: \(error.localizedDescription)"
+    case decodingError(DecodingError)
+}
+
+extension AppError: Equatable {
+    static func == (lhs: AppError, rhs: AppError) -> Bool {
+        switch (lhs, rhs) {
+        case (.mediaNotFound, .mediaNotFound):
+            return true
+        case (.decodingError, .decodingError):
+            return true
+        default:
+            return false
         }
     }
 } 

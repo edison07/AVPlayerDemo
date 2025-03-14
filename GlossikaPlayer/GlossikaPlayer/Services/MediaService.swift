@@ -76,3 +76,9 @@ final class MockMediaService: MediaServiceProtocol {
     }
 }
 
+final class FailingMediaService: MediaServiceProtocol {
+    func fetchMedia() -> AnyPublisher<VideoPlayerModel.MediaJSON, Error> {
+        return Fail(error: AppError.mediaNotFound)
+            .eraseToAnyPublisher()
+    }
+}
