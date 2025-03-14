@@ -29,8 +29,9 @@ final class VideoPlayerViewController: UIViewController {
     
     @IBOutlet weak var tableView: UITableView!
     
-    private var viewModel = VideoPlayerViewModel()
+    private var viewModel = VideoPlayerViewModel(/*mediaService: MockMediaService()*/)
     private var cancellables = Set<AnyCancellable>()
+    // 用於控制控制面板自動淡出的任務
     private var fadeOutTask: Task<Void, Never>?
     
     override func viewDidLoad() {
@@ -38,19 +39,23 @@ final class VideoPlayerViewController: UIViewController {
         setupUI()
         setupBindings()
         setupNotifications()
+        // 將播放器層附加到播放器視圖上
         viewModel.attachPlayerLayer(to: playerView)
         viewModel.setupPlayer()
     }
     
+    // 處理裝置旋轉時的介面調整
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate(alongsideTransition: { [weak self] _ in
             guard let self = self, let windowScene = self.view.window?.windowScene else { return }
             let newOrientation = windowScene.interfaceOrientation
+            // 根據新的方向更新全螢幕按鈕圖示
             self.updateFullScreenButtonIcon(for: newOrientation.isPortrait ? .portrait : .landscapeRight)
         })
     }
     
+    // 視圖佈局更新時，同步更新播放器層的尺寸
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         viewModel.updatePlayerLayerFrame(to: playerView.bounds)
@@ -59,52 +64,64 @@ final class VideoPlayerViewController: UIViewController {
 
 // MARK: - IBActions
 extension VideoPlayerViewController {
+    // 點擊播放器視圖時顯示控制面板
     @IBAction func didTapPlayerView(_ sender: UITapGestureRecognizer) {
         showControlView()
     }
     
+    // 點擊控制面板時隱藏控制面板
     @IBAction func didTapControlView(_ sender: UITapGestureRecognizer) {
         hideControlView()
     }
     
+    // 點擊播放/暫停按鈕時切換播放狀態
     @IBAction func didTapPlayButton(_ sender: UIButton) {
         viewModel.togglePlayPause()
     }
     
+    // 點擊快轉按鈕
     @IBAction func didTapSkipForwardButton(_ sender: UIButton) {
         viewModel.skipForward()
     }
     
+    // 點擊倒轉按鈕
     @IBAction func didTapSkipBackwardButton(_ sender: UIButton) {
         viewModel.skipBackward()
     }
     
+    // 點擊全螢幕按鈕時切換螢幕方向
     @IBAction func didTapFullScreenButton(_ sender: UIButton) {
         guard let windowScene = view.window?.windowScene else { return }
         let currentOrientation = windowScene.interfaceOrientation
+        // 根據目前方向決定新的方向
         let newOrientationMask: UIInterfaceOrientationMask = currentOrientation.isPortrait ? .landscapeRight : .portrait
         let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: newOrientationMask)
-        windowScene.requestGeometryUpdate(geometryPreferences) { error in
-            print("Failed to change orientation: \(error.localizedDescription)")
+        // 請求更新螢幕方向，並處理可能的錯誤
+        windowScene.requestGeometryUpdate(geometryPreferences) { [weak self] error in
+            self?.showErrorAlert(with: "無法切換螢幕方向: \(error.localizedDescription)")
         }
         updateFullScreenButtonIcon(for: newOrientationMask)
     }
     
+    // 進度條按下時顯示拖曳背景視圖並設定拖曳狀態
     @IBAction func progressSliderTouchDown(_ sender: UISlider) {
         seekBackgroundView.isHidden = false
         viewModel.isSeeking = true
     }
     
+    // 進度條釋放時隱藏拖曳背景視圖並跳轉到選擇的時間點
     @IBAction func progressSliderTouchUpInside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
     }
     
+    // 進度條在外部釋放時的處理，與內部釋放相同
     @IBAction func progressSliderTouchUpOutside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
     }
     
+    // 進度條值變化時更新顯示的時間文字
     @IBAction func progressSliderValueChanged(_ sender: UISlider) {
         let formattedTime = viewModel.formattedTime(for: Double(sender.value))
         viewModel.seekTimeText = formattedTime
@@ -113,38 +130,69 @@ extension VideoPlayerViewController {
 
 // MARK: - Private Methods
 private extension VideoPlayerViewController {
+    // 設定介面初始狀態
     func setupUI() {
         tableView.delegate = self
         tableView.dataSource = self
         durationTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
-        seekBackgroundView.layer.cornerRadius = 15
-        seekBackgroundView.clipsToBounds = true
+        seekBackgroundView.addRoundedCorners(radius: 15)
+        
+        playPauseButton.setImage(UIImage(systemName: IconConstants.playIcon), for: .normal)
+        skipForwardButton.setImage(UIImage(systemName: IconConstants.skipForwardIcon), for: .normal)
+        skipBackwardButton.setImage(UIImage(systemName: IconConstants.skipBackwardIcon), for: .normal)
     }
     
+    // 設定資料綁定，監聽 ViewModel 中的狀態變化
     func setupBindings() {
+        // 監聽載入狀態變化
         viewModel.$isLoading
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isLoading in
-                isLoading ? self?.loadingIndicator.startAnimating() : self?.loadingIndicator.stopAnimating()
-            }
-            .store(in: &cancellables)
-        
-        viewModel.$isPlaying
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isPlaying in
-                let iconName = isPlaying ? "pause.fill" : "play.fill"
-                self?.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
-                if isPlaying {
-                    if self?.fadeOutTask == nil {
-                        self?.fadeOutControlView()
-                    }
+                guard let self = self else { return }
+                if isLoading {
+                    // 開始載入時顯示載入指示器並隱藏控制面板
+                    self.loadingIndicator.startAnimating()
+                    self.hideControlView()
                 } else {
-                    self?.showControlView()
+                    // 載入完成時隱藏載入指示器，如果影片未播放則顯示控制面板
+                    self.loadingIndicator.stopAnimating()
+                    if !self.viewModel.isPlaying {
+                        self.showControlView()
+                    }
                 }
             }
             .store(in: &cancellables)
         
+        // 監聽播放狀態變化
+        viewModel.$isPlaying
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isPlaying in
+                guard let self = self else { return }
+                // 根據播放狀態更新播放/暫停按鈕圖示
+                let iconName = isPlaying ? "pause.fill" : "play.fill"
+                self.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
+                if isPlaying {
+                    // 播放時如果尚未啟動淡出任務，開始淡出控制面板
+                    if self.fadeOutTask == nil {
+                        self.fadeOutControlView()
+                    }
+                } else {
+                    // 暫停時：如果控制面板已隱藏或幾乎看不見，直接顯示控制面板
+                    if self.controlView.isHidden || self.controlView.alpha < 0.1 {
+                        self.showControlView()
+                    } else {
+                        // 取消正在進行的淡出任務
+                        if let task = self.fadeOutTask {
+                            task.cancel()
+                            self.fadeOutTask = nil
+                        }
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
+        // 監聽播放進度變化，更新進度條
         viewModel.$progress
             .receive(on: DispatchQueue.main)
             .sink { [weak self] progress in
@@ -152,6 +200,7 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽目前時間文字變化，更新時間標籤
         viewModel.$currentTimeText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] timeText in
@@ -159,6 +208,7 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽拖曳時間文字變化，更新拖曳時間標籤
         viewModel.$seekTimeText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] timeText in
@@ -166,6 +216,7 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽錯誤訊息變化，顯示錯誤提示
         viewModel.$errorMessage
             .receive(on: DispatchQueue.main)
             .sink { [weak self] errorMessage in
@@ -175,6 +226,7 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽媒體資料變化，重新整理列表
         viewModel.$media
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -182,6 +234,7 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽控制項啟用狀態變化，更新 UI 元素的啟用狀態
         viewModel.$controlsEnabled
             .receive(on: DispatchQueue.main)
             .sink { [weak self] enabled in
@@ -190,6 +243,7 @@ private extension VideoPlayerViewController {
                 self?.fullScreenButton.isEnabled = enabled
                 self?.skipForwardButton.isEnabled = enabled
                 self?.skipBackwardButton.isEnabled = enabled
+                // 如果控制項被停用，重設播放按鈕圖示和進度條
                 if !enabled {
                     self?.playPauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
                     self?.progressSlider.value = 0
@@ -198,7 +252,9 @@ private extension VideoPlayerViewController {
             .store(in: &cancellables)
     }
     
+    // 設定通知監聽
     func setupNotifications() {
+        // 監聽應用程式進入背景的通知
         NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
             .sink { [weak self] _ in
                 self?.handleAppDidEnterBackground()
@@ -206,70 +262,120 @@ private extension VideoPlayerViewController {
             .store(in: &cancellables)
     }
     
+    // 處理應用程式進入背景的事件
     @objc func handleAppDidEnterBackground() {
+        // 進入背景時暫停播放並顯示控制面板
         viewModel.pause()
         showControlView()
     }
     
+    // 根據螢幕方向更新全螢幕按鈕圖示和列表顯示狀態
     func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
-        if orientation == .landscapeRight || orientation == .landscapeLeft {
-                tableView.isHidden = true
+        // 定義橫向和直向模式下的按鈕尺寸
+        let buttonSizes: (playButton: CGFloat, skipButton: CGFloat) = orientation.isLandscape ?
+            (playButton: 50, skipButton: 40) : 
+            (playButton: 30, skipButton: 20)
+        
+        // 設定播放/暫停按鈕的尺寸
+        let playButtonConfig = UIImage.SymbolConfiguration(pointSize: buttonSizes.playButton)
+        playPauseButton.setPreferredSymbolConfiguration(playButtonConfig, forImageIn: .normal)
+        
+        // 設定快轉/倒轉按鈕的尺寸
+        let skipButtonConfig = UIImage.SymbolConfiguration(pointSize: buttonSizes.skipButton)
+        skipForwardButton.setPreferredSymbolConfiguration(skipButtonConfig, forImageIn: .normal)
+        skipBackwardButton.setPreferredSymbolConfiguration(skipButtonConfig, forImageIn: .normal)
+        
+        // 根據方向設定 UI
+        if orientation.isLandscape {
+            // 橫向模式：顯示縮小圖示
             fullScreenButton.setImage(UIImage(systemName: IconConstants.landscapeIcon), for: .normal)
-            } else {
-                tableView.isHidden = false
-                fullScreenButton.setImage(UIImage(systemName: IconConstants.portraitIcon), for: .normal)
-            }
+        } else {
+            // 直向模式：顯示全螢幕圖示
+            fullScreenButton.setImage(UIImage(systemName: IconConstants.portraitIcon), for: .normal)
+        }
     }
     
+    // 顯示控制面板
     func showControlView() {
-        fadeOutTask?.cancel()
-        controlView.isHidden = false
+        // 如果正在載入，不顯示控制面板
+        if loadingIndicator.isAnimating {
+            return
+        }
+        
+        // 取消可能存在的淡出任務
+        if let task = fadeOutTask {
+            task.cancel()
+            fadeOutTask = nil
+        }
+        // 淡入顯示控制面板
+        controlView.fadeIn(targetAlpha: 0.45)
+        // 如果影片正在播放，啟動淡出任務
         if viewModel.isPlaying {
             fadeOutControlView()
         }
     }
     
+    // 隱藏控制面板
     func hideControlView() {
-        fadeOutTask?.cancel()
-        controlView.isHidden = true
+        // 取消可能存在的淡出任務
+        if let task = fadeOutTask {
+            task.cancel()
+            fadeOutTask = nil
+        }
+        // 淡出隱藏控制面板
+        controlView.fadeOut()
     }
     
+    // 設定控制面板的自動淡出
     func fadeOutControlView() {
-        fadeOutTask?.cancel()
+        // 取消可能存在的淡出任務
+        if let task = fadeOutTask {
+            task.cancel()
+            fadeOutTask = nil
+        }
+        // 建立新的淡出任務
         fadeOutTask = Task {
             do {
-                try await Task.sleep(nanoseconds: 2_000_000_000)
+                // 等待指定時間後執行淡出
+                try await Task.sleep(nanoseconds: TimeConstants.controlsFadeOutTime)
             } catch {
                 return
             }
+            // 在主執行緒上執行 UI 更新
             await MainActor.run {
+                // 只有在播放且控制面板顯示時才淡出控制面板
                 if self.viewModel.isPlaying && !self.controlView.isHidden {
-                    self.controlView.isHidden = true
+                    self.controlView.fadeOut()
                 }
                 self.fadeOutTask = nil
             }
         }
     }
     
-    
+    // 顯示錯誤提示
     func showErrorAlert(with message: String) {
         ErrorAlertManager.showErrorAlert(on: self, message: message)
     }
 }
 
+// MARK: - UITableViewDataSource
 extension VideoPlayerViewController: UITableViewDataSource {
+    // 回傳列表的分區數量
     func numberOfSections(in tableView: UITableView) -> Int {
         return viewModel.media?.categories.count ?? 0
     }
     
+    // 回傳每個分區的列數
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return viewModel.media?.categories[section].videos.count ?? 0
     }
     
+    // 回傳分區標題
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         return viewModel.media?.categories[section].name
     }
     
+    // 設定每個儲存格
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row] else {
             return UITableViewCell()
@@ -282,12 +388,23 @@ extension VideoPlayerViewController: UITableViewDataSource {
     }
 }
 
+// MARK: - UITableViewDelegate
 extension VideoPlayerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row],
               let urlString = video.sources.first,
               let videoURL = URL(string: urlString) else { return }
         
+        // 更新播放器以播放選取的影片
         viewModel.updateVideo(with: videoURL)
+        progressSlider.value = 0
+    }
+}
+
+// MARK: - UIInterfaceOrientationMask Extension
+extension UIInterfaceOrientationMask {
+    // 判斷方向是否為橫向
+    var isLandscape: Bool {
+        return self == .landscapeRight || self == .landscapeLeft || self == .landscape
     }
 }

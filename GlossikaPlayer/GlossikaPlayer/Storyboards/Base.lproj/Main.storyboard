@@ -241,6 +241,9 @@
                             <constraint firstItem="NiW-y4-N92" firstAttribute="bottom" secondItem="zCx-eE-UgD" secondAttribute="bottom" id="sY0-B3-pRX"/>
                         </constraints>
                         <variation key="default">
+                            <mask key="subviews">
+                                <exclude reference="GGc-js-yVq"/>
+                            </mask>
                             <mask key="constraints">
                                 <exclude reference="sY0-B3-pRX"/>
                                 <exclude reference="3qi-7G-E4a"/>
@@ -256,6 +259,9 @@
                             </mask>
                         </variation>
                         <variation key="heightClass=regular-widthClass=compact">
+                            <mask key="subviews">
+                                <include reference="GGc-js-yVq"/>
+                            </mask>
                             <mask key="constraints">
                                 <include reference="QiR-Xc-yOM"/>
                             </mask>
