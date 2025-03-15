@@ -209,6 +209,11 @@ private extension VideoPlayerViewController {
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekBackgroundView.addRoundedCorners(radius: 15)
         
+        let configuration = UIImage.SymbolConfiguration(pointSize: 15)
+        let image = UIImage(systemName: "circle.fill", withConfiguration: configuration)
+        progressSlider.setThumbImage(image, for: .normal)
+        progressSlider.setThumbImage(image, for: .highlighted)
+        
         playPauseButton.setImage(UIImage(systemName: IconConstants.playIcon), for: .normal)
         skipForwardButton.setImage(UIImage(systemName: IconConstants.skipForwardIcon), for: .normal)
         skipBackwardButton.setImage(UIImage(systemName: IconConstants.skipBackwardIcon), for: .normal)

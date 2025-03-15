@@ -160,7 +160,7 @@
                                 </connections>
                             </view>
                             <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="hnT-3w-FgG">
-                                <rect key="frame" x="163.66666666666666" y="204" width="66" height="30"/>
+                                <rect key="frame" x="163.66666666666666" y="200" width="66" height="30"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="00:00" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8EJ-4h-AE9">
                                         <rect key="frame" x="10" y="5" width="46" height="20"/>
@@ -179,8 +179,10 @@
                                 </constraints>
                             </view>
                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="mhb-Xk-zey">
-                                <rect key="frame" x="-2" y="264" width="397" height="31"/>
+                                <rect key="frame" x="-2" y="260" width="397" height="31"/>
+                                <color key="tintColor" systemColor="systemRedColor"/>
                                 <color key="minimumTrackTintColor" systemColor="systemRedColor"/>
+                                <color key="thumbTintColor" systemColor="systemRedColor"/>
                                 <connections>
                                     <action selector="progressSliderTouchDown:" destination="BYZ-38-t0r" eventType="touchDown" id="4pb-wg-Jci"/>
                                     <action selector="progressSliderTouchUpInside:" destination="BYZ-38-t0r" eventType="touchUpInside" id="tvI-7F-IMH"/>
@@ -189,7 +191,7 @@
                                 </connections>
                             </slider>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="GGc-js-yVq">
-                                <rect key="frame" x="0.0" y="294" width="393" height="524"/>
+                                <rect key="frame" x="0.0" y="295" width="393" height="523"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="VideoListTableViewCell" id="vFf-xK-QSt" customClass="VideoListTableViewCell" customModule="GlossikaPlayer" customModuleProvider="target">
@@ -244,12 +246,12 @@
                             <constraint firstItem="NiW-y4-N92" firstAttribute="leading" secondItem="zCx-eE-UgD" secondAttribute="leading" id="MSB-ih-1gR"/>
                             <constraint firstItem="GGc-js-yVq" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="NQw-lK-QeO"/>
                             <constraint firstAttribute="bottom" secondItem="mhb-Xk-zey" secondAttribute="bottom" constant="30" id="Nvf-8Q-Sxj"/>
-                            <constraint firstItem="mhb-Xk-zey" firstAttribute="bottom" secondItem="zCx-eE-UgD" secondAttribute="bottom" constant="14" id="QiR-Xc-yOM"/>
+                            <constraint firstItem="mhb-Xk-zey" firstAttribute="bottom" secondItem="zCx-eE-UgD" secondAttribute="bottom" constant="10" id="QiR-Xc-yOM"/>
                             <constraint firstItem="mhb-Xk-zey" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="Tbt-W6-uU1"/>
                             <constraint firstItem="NiW-y4-N92" firstAttribute="bottom" secondItem="zCx-eE-UgD" secondAttribute="bottom" id="XdG-eS-Zgu"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="GGc-js-yVq" secondAttribute="trailing" id="Ylc-mT-I24"/>
                             <constraint firstItem="mhb-Xk-zey" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" id="cMx-hP-EEX"/>
-                            <constraint firstItem="GGc-js-yVq" firstAttribute="top" secondItem="mhb-Xk-zey" secondAttribute="bottom" id="dWd-sq-aXP"/>
+                            <constraint firstItem="GGc-js-yVq" firstAttribute="top" secondItem="mhb-Xk-zey" secondAttribute="bottom" constant="5" id="dWd-sq-aXP"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="GGc-js-yVq" secondAttribute="bottom" id="mqb-BL-gEe"/>
                             <constraint firstItem="hnT-3w-FgG" firstAttribute="centerX" secondItem="zCx-eE-UgD" secondAttribute="centerX" id="omo-WU-hV3"/>
                             <constraint firstItem="NiW-y4-N92" firstAttribute="bottom" secondItem="zCx-eE-UgD" secondAttribute="bottom" id="sY0-B3-pRX"/>
