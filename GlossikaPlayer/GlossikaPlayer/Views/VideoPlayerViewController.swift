@@ -24,6 +24,7 @@ final class VideoPlayerViewController: UIViewController {
     @IBOutlet weak var playPauseButton: UIButton!
     @IBOutlet weak var skipForwardButton: UIButton!
     @IBOutlet weak var skipBackwardButton: UIButton!
+    @IBOutlet weak var playRateButton: UIButton!
     
     @IBOutlet weak var loadingIndicator: UIActivityIndicatorView!
     
@@ -33,12 +34,16 @@ final class VideoPlayerViewController: UIViewController {
     private var cancellables = Set<AnyCancellable>()
     // 用於控制控制面板自動淡出的任務
     private var fadeOutTask: Task<Void, Never>?
+    // 播放速度選項
+    private let playbackRates: [Float] = [0.5, 1.0, 1.5, 2.0]
+    private var currentRateIndex: Int = 1 // 默認 1.0x
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupBindings()
         setupNotifications()
+        setupGestures()
         // 將播放器層附加到播放器視圖上
         viewModel.attachPlayerLayer(to: playerView)
         viewModel.setupPlayer()
@@ -89,18 +94,19 @@ extension VideoPlayerViewController {
         viewModel.skipBackward()
     }
     
+    // 新增：點擊播放速度按鈕
+    @IBAction func didTapPlayRateButton(_ sender: UIButton) {
+        // 循環切換播放速度
+        currentRateIndex = (currentRateIndex + 1) % playbackRates.count
+        let newRate = playbackRates[currentRateIndex]
+        
+        viewModel.setPlaybackRate(newRate)
+        updatePlayRateButtonTitle()
+    }
+    
     // 點擊全螢幕按鈕時切換螢幕方向
     @IBAction func didTapFullScreenButton(_ sender: UIButton) {
-        guard let windowScene = view.window?.windowScene else { return }
-        let currentOrientation = windowScene.interfaceOrientation
-        // 根據目前方向決定新的方向
-        let newOrientationMask: UIInterfaceOrientationMask = currentOrientation.isPortrait ? .landscapeRight : .portrait
-        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: newOrientationMask)
-        // 請求更新螢幕方向，並處理可能的錯誤
-        windowScene.requestGeometryUpdate(geometryPreferences) { [weak self] error in
-            self?.showErrorAlert(with: "無法切換螢幕方向: \(error.localizedDescription)")
-        }
-        updateFullScreenButtonIcon(for: newOrientationMask)
+        toggleFullScreen()
     }
     
     // 進度條按下時顯示拖曳背景視圖並設定拖曳狀態
@@ -125,6 +131,69 @@ extension VideoPlayerViewController {
     @IBAction func progressSliderValueChanged(_ sender: UISlider) {
         let formattedTime = viewModel.formattedTime(for: Double(sender.value))
         viewModel.seekTimeText = formattedTime
+    }
+}
+
+// MARK: - 手勢和動畫相關方法
+private extension VideoPlayerViewController {
+    func setupGestures() {
+        let gestureViews: [UIView] = [playerView, controlView]
+        
+        gestureViews.forEach { view in
+            addSwipeGesture(to: view, direction: .up, action: #selector(handleSwipeUp(_:)))
+            addSwipeGesture(to: view, direction: .down, action: #selector(handleSwipeDown(_:)))
+        }
+    }
+
+    private func addSwipeGesture(to view: UIView, direction: UISwipeGestureRecognizer.Direction, action: Selector) {
+        let swipeGesture = UISwipeGestureRecognizer(target: self, action: action)
+        swipeGesture.direction = direction
+        view.addGestureRecognizer(swipeGesture)
+    }
+
+    // 上滑進入全螢幕
+    @objc func handleSwipeUp(_ gesture: UISwipeGestureRecognizer) {
+        guard let windowScene = view.window?.windowScene else { return }
+        let currentOrientation = windowScene.interfaceOrientation
+        
+        // 只有在直向模式下才進入全螢幕
+        if currentOrientation.isPortrait {
+            toggleFullScreen()
+        }
+    }
+
+    // 下滑退出全螢幕
+    @objc func handleSwipeDown(_ gesture: UISwipeGestureRecognizer) {
+        guard let windowScene = view.window?.windowScene else { return }
+        let currentOrientation = windowScene.interfaceOrientation
+        
+        // 只有在橫向模式下才退出全螢幕
+        if !currentOrientation.isPortrait {
+            toggleFullScreen()
+        }
+    }
+
+    // 切換全螢幕
+    func toggleFullScreen() {
+        guard let windowScene = view.window?.windowScene else { return }
+        let currentOrientation = windowScene.interfaceOrientation
+        // 根據目前方向決定新的方向
+        let newOrientationMask: UIInterfaceOrientationMask = currentOrientation.isPortrait ? .landscapeRight : .portrait
+        let geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: newOrientationMask)
+        
+        // 請求更新螢幕方向，並處理可能的錯誤
+        windowScene.requestGeometryUpdate(geometryPreferences) { [weak self] error in
+            self?.showErrorAlert(with: "無法切換螢幕方向: \(error.localizedDescription)")
+        }
+        updateFullScreenButtonIcon(for: newOrientationMask)
+    }
+
+    // 更新播放速度按鈕的標題
+    func updatePlayRateButtonTitle() {
+        let currentRate = playbackRates[currentRateIndex]
+        let rateText = String(format: "%.1fx", currentRate)
+        playRateButton.setTitle(rateText, for: .normal)
+        fadeOutControlView()
     }
 }
 
@@ -243,6 +312,7 @@ private extension VideoPlayerViewController {
                 self?.fullScreenButton.isEnabled = enabled
                 self?.skipForwardButton.isEnabled = enabled
                 self?.skipBackwardButton.isEnabled = enabled
+                self?.playRateButton.isEnabled = enabled
                 // 如果控制項被停用，重設播放按鈕圖示和進度條
                 if !enabled {
                     self?.playPauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
@@ -273,8 +343,8 @@ private extension VideoPlayerViewController {
     func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
         // 定義橫向和直向模式下的按鈕尺寸
         let buttonSizes: (playButton: CGFloat, skipButton: CGFloat) = orientation.isLandscape ?
-            (playButton: 50, skipButton: 40) : 
-            (playButton: 30, skipButton: 20)
+        (playButton: 50, skipButton: 40) :
+        (playButton: 30, skipButton: 20)
         
         // 設定播放/暫停按鈕的尺寸
         let playButtonConfig = UIImage.SymbolConfiguration(pointSize: buttonSizes.playButton)

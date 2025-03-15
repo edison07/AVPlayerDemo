@@ -124,6 +124,10 @@ final class VideoPlayerViewModel {
         player.seek(to: CMTime(seconds: newTime, preferredTimescale: TimeConstants.timeScale))
     }
     
+    func setPlaybackRate(_ rate: Float) {
+        player.rate = rate
+    }
+    
     func formattedTime(for progress: Double) -> String {
         guard let duration = player.currentItem?.duration.seconds, duration > 0 else {
             return TimeConstants.defaultTimeText

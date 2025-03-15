@@ -105,6 +105,16 @@
                                             <action selector="didTapFullScreenButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="nwf-vX-oai"/>
                                         </connections>
                                     </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jg7-R1-5YU">
+                                        <rect key="frame" x="292.33333333333331" y="166" width="30" height="30"/>
+                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                        <state key="normal" title="1x">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="didTapPlayRateButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="B5v-nb-UgA"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <gestureRecognizers/>
@@ -112,6 +122,8 @@
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="centerY" secondItem="NiW-y4-N92" secondAttribute="centerY" id="ADe-dA-eo8"/>
                                     <constraint firstAttribute="bottom" secondItem="183-3z-Sgz" secondAttribute="bottom" constant="70" id="Eg3-m6-mvg"/>
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="leading" secondItem="NiW-y4-N92" secondAttribute="leading" constant="50" id="J9e-Lj-EnN"/>
+                                    <constraint firstItem="jg7-R1-5YU" firstAttribute="centerY" secondItem="CA3-jO-nJu" secondAttribute="centerY" id="P6f-L4-xGn"/>
+                                    <constraint firstItem="CA3-jO-nJu" firstAttribute="leading" secondItem="jg7-R1-5YU" secondAttribute="trailing" constant="30" id="QP0-yb-fAi"/>
                                     <constraint firstAttribute="trailing" secondItem="CA3-jO-nJu" secondAttribute="trailing" constant="15" id="X9D-LO-mUT"/>
                                     <constraint firstItem="Jrc-Lr-4oe" firstAttribute="centerX" secondItem="NiW-y4-N92" secondAttribute="centerX" id="Yzt-j9-BC6"/>
                                     <constraint firstAttribute="trailing" secondItem="Jrc-Lr-4oe" secondAttribute="trailing" constant="50" id="fVA-0K-at5"/>
@@ -273,6 +285,7 @@
                         <outlet property="fullScreenButton" destination="CA3-jO-nJu" id="FrP-kh-XpB"/>
                         <outlet property="loadingIndicator" destination="ltJ-Lh-e7s" id="c3Y-Cl-YE8"/>
                         <outlet property="playPauseButton" destination="qsT-em-C09" id="9ca-DX-5Mt"/>
+                        <outlet property="playRateButton" destination="jg7-R1-5YU" id="2Jp-hQ-fb1"/>
                         <outlet property="playerView" destination="zCx-eE-UgD" id="LTR-Lp-FZz"/>
                         <outlet property="progressSlider" destination="mhb-Xk-zey" id="TFW-4G-rTE"/>
                         <outlet property="seekBackgroundView" destination="hnT-3w-FgG" id="i3u-cd-Qzu"/>
@@ -283,14 +296,14 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
-                <tapGestureRecognizer id="beR-Gn-jnA">
-                    <connections>
-                        <action selector="didTapPlayerView:" destination="BYZ-38-t0r" id="GrT-4Y-1N1"/>
-                    </connections>
-                </tapGestureRecognizer>
                 <tapGestureRecognizer id="2BI-A6-hpT">
                     <connections>
                         <action selector="didTapControlView:" destination="BYZ-38-t0r" id="QMA-8a-3sz"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <tapGestureRecognizer id="beR-Gn-jnA">
+                    <connections>
+                        <action selector="didTapPlayerView:" destination="BYZ-38-t0r" id="GrT-4Y-1N1"/>
                     </connections>
                 </tapGestureRecognizer>
             </objects>
@@ -306,7 +319,7 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemRedColor">
-            <color red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="0.23137254900000001" blue="0.18823529410000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
