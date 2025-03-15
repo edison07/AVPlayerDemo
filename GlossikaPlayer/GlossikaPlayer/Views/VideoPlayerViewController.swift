@@ -87,11 +87,13 @@ extension VideoPlayerViewController {
     // 點擊快轉按鈕
     @IBAction func didTapSkipForwardButton(_ sender: UIButton) {
         viewModel.skipForward()
+        fadeOutControlView()
     }
     
     // 點擊倒轉按鈕
     @IBAction func didTapSkipBackwardButton(_ sender: UIButton) {
         viewModel.skipBackward()
+        fadeOutControlView()
     }
     
     // 新增：點擊播放速度按鈕
