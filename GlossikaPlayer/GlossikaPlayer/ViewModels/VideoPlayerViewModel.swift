@@ -7,6 +7,7 @@
 
 import AVKit
 import Combine
+import os
 
 final class VideoPlayerViewModel {
     typealias VideoDetail = (title: String, subtitle: String, description: String)
@@ -27,6 +28,7 @@ final class VideoPlayerViewModel {
     private var cancellables = Set<AnyCancellable>()
     private var timeObserverToken: Any?
     private let mediaService: MediaServiceProtocol
+    private let logger = Logger(subsystem: "com.edison.GlossikaPlayer", category: "Playback")
     
     // MARK: - Public Properties
     var isSeeking: Bool = false
@@ -35,6 +37,7 @@ final class VideoPlayerViewModel {
     init(mediaService: MediaServiceProtocol = MediaService()) {
         self.player = AVPlayer()
         self.mediaService = mediaService
+        setupPlayerSettings()
         fetchMediaData()
     }
     
@@ -167,9 +170,14 @@ final class VideoPlayerViewModel {
 
 // MARK: - Private Methods
 private extension VideoPlayerViewModel {
+    
     func setupPlayerSettings() {
-        player.automaticallyWaitsToMinimizeStalling = true
-        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            logger.error("設定 AVAudioSession 失敗：\(String(describing: error))")
+        }
     }
     
     func setupTimeObserver() {
