@@ -32,3 +32,35 @@ extension UIView {
         })
     }
 }
+
+extension UILabel {
+    var isTextExceedOneLine: Bool {
+        guard let text = self.text, let font = self.font else { return false }
+            
+        let maxSize = CGSize(width: self.frame.width, height: .greatestFiniteMagnitude)
+        let textHeight = text.boundingRect(
+            with: maxSize,
+            options: .usesLineFragmentOrigin,
+            attributes: [.font: font],
+            context: nil
+        ).height
+            
+        return textHeight > font.lineHeight
+    }
+}
+
+// MARK: - Collection
+extension Collection {
+    /// 安全地存取集合中的元素，如果索引超出範圍則返回 nil
+    subscript(safe index: Index) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
+}
+
+// MARK: - UIInterfaceOrientationMask Extension
+extension UIInterfaceOrientationMask {
+    // 判斷方向是否為橫向
+    var isLandscape: Bool {
+        return self == .landscapeRight || self == .landscapeLeft || self == .landscape
+    }
+}
