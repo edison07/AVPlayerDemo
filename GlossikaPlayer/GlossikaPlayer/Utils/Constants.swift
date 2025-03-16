@@ -31,3 +31,9 @@ enum AnimationConstants {
     static let fastDuration: Double = 0.15
     static let slowDuration: Double = 0.5
 }
+
+// MARK: - UIConstants
+enum UIConstants {
+    static let showMoreText = "顯示更多.."
+    static let showLessText = "顯示更少.."
+}

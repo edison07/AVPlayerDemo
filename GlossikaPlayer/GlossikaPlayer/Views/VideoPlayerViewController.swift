@@ -9,6 +9,7 @@ import UIKit
 import AVKit
 import Combine
 
+// MARK: - VideoPlayerViewController
 final class VideoPlayerViewController: UIViewController {
     
     // MARK: - IBOutlets
@@ -38,11 +39,12 @@ final class VideoPlayerViewController: UIViewController {
     // MARK: - Properties
     private var viewModel = VideoPlayerViewModel(/*mediaService: MockMediaService()*/)
     private var cancellables = Set<AnyCancellable>()
-    // 用於控制控制面板自動淡出的任務
+    /// 用於控制控制面板自動淡出的任務
     private var fadeOutTask: Task<Void, Never>?
-    // 播放速度選項
+    /// 播放速度選項
     private let playbackRates: [Float] = [0.5, 1.0, 1.5, 2.0]
     private var currentRateIndex: Int = 1 // 默認 1.0x
+    /// 是否展開影片描述（顯示更多）
     private var isShowingMore: Bool = false
     
     // MARK: - Lifecycle Methods
@@ -60,14 +62,14 @@ final class VideoPlayerViewController: UIViewController {
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate(alongsideTransition: { [weak self] _ in
-            guard let self = self, let windowScene = self.view.window?.windowScene else { return }
+            guard let self, let windowScene = self.view.window?.windowScene else { return }
+            
             let newOrientation = windowScene.interfaceOrientation
             // 根據新的方向更新全螢幕按鈕圖示
             self.updateFullScreenButtonIcon(for: newOrientation.isPortrait ? .portrait : .landscapeRight)
         })
     }
     
-    // 視圖佈局更新時，同步更新播放器層的尺寸
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         viewModel.updatePlayerLayerFrame(to: playerView.bounds)
@@ -82,12 +84,14 @@ final class VideoPlayerViewController: UIViewController {
 
 // MARK: - IBActions
 extension VideoPlayerViewController {
+    
     @IBAction func didTapShowMoreButton(_ sender: UIButton) {
         isShowingMore.toggle()
-        let title = isShowingMore ? "顯示更少.." : "顯示更多.."
+        let title = isShowingMore ? UIConstants.showLessText : UIConstants.showMoreText
         showMoreButton.setTitle(title, for: .normal)
         
-        UIView.animate(withDuration: AnimationConstants.defaultDuration) {
+        UIView.animate(withDuration: AnimationConstants.defaultDuration) { [weak self] in
+            guard let self = self else { return }
             self.videoDescriptionLabel.numberOfLines = self.isShowingMore ? 0 : 1
             self.view.layoutIfNeeded()
         }
@@ -137,7 +141,6 @@ extension VideoPlayerViewController {
     @IBAction func progressSliderTouchDown(_ sender: UISlider) {
         seekBackgroundView.isHidden = false
         viewModel.isSeeking = true
-        
         // 取消可能存在的淡出任務
         cancelFadeOutTask()
     }
@@ -146,7 +149,6 @@ extension VideoPlayerViewController {
     @IBAction func progressSliderTouchUpInside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
-        
         // 如果正在播放，重新啟動淡出任務
         if viewModel.isPlaying {
             fadeOutControlView()
@@ -156,7 +158,6 @@ extension VideoPlayerViewController {
     @IBAction func progressSliderTouchUpOutside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
-        
         // 如果正在播放，重新啟動淡出任務
         if viewModel.isPlaying {
             fadeOutControlView()
@@ -169,18 +170,20 @@ extension VideoPlayerViewController {
     }
 }
 
-// MARK: - 手勢和動畫相關方法
+// MARK: - 手勢與動畫相關方法
 private extension VideoPlayerViewController {
+    
     func setupGestures() {
         let gestureViews: [UIView] = [playerView, controlView]
-        
         gestureViews.forEach { view in
             addSwipeGesture(to: view, direction: .up, action: #selector(handleSwipeUp(_:)))
             addSwipeGesture(to: view, direction: .down, action: #selector(handleSwipeDown(_:)))
         }
     }
-
-    private func addSwipeGesture(to view: UIView, direction: UISwipeGestureRecognizer.Direction, action: Selector) {
+    
+    private func addSwipeGesture(to view: UIView,
+                                 direction: UISwipeGestureRecognizer.Direction,
+                                 action: Selector) {
         let swipeGesture = UISwipeGestureRecognizer(target: self, action: action)
         swipeGesture.direction = direction
         view.addGestureRecognizer(swipeGesture)
@@ -218,7 +221,9 @@ private extension VideoPlayerViewController {
         
         // 請求更新螢幕方向，並處理可能的錯誤
         windowScene.requestGeometryUpdate(geometryPreferences) { [weak self] error in
-            self?.showErrorAlert(with: "無法切換螢幕方向: \(error.localizedDescription)")
+            guard let self else { return }
+            
+            self.showErrorAlert(with: "無法切換螢幕方向: \(error.localizedDescription)")
         }
         updateFullScreenButtonIcon(for: newOrientationMask)
     }
@@ -232,12 +237,13 @@ private extension VideoPlayerViewController {
     }
 }
 
-// MARK: - Private Methods
+// MARK: - Private Methods (UI Setup & Binding)
 private extension VideoPlayerViewController {
-    // 設定介面初始狀態
+    
     func setupUI() {
         tableView.delegate = self
         tableView.dataSource = self
+        
         videoTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekBackgroundView.addRoundedCorners(radius: 15)
@@ -248,7 +254,11 @@ private extension VideoPlayerViewController {
         progressSlider.setThumbImage(image, for: .normal)
         progressSlider.setThumbImage(image, for: .highlighted)
         
-        // 初始化播放速度按钮
+        videoTitleLabel.text = ""
+        videoSubtitleLabel.text = ""
+        videoDescriptionLabel.text = ""
+        showMoreButton.isHidden = true
+
         updatePlayRateButtonTitle()
     }
     
@@ -258,7 +268,8 @@ private extension VideoPlayerViewController {
         viewModel.$isLoading
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isLoading in
-                guard let self = self else { return }
+                guard let self else { return }
+                
                 if isLoading {
                     self.loadingIndicator.startAnimating()
                     self.playPauseButton.alpha = 0
@@ -275,11 +286,11 @@ private extension VideoPlayerViewController {
         viewModel.$isPlaying
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isPlaying in
-                guard let self = self else { return }
+                guard let self else { return }
                 // 根據播放狀態更新播放/暫停按鈕圖示
                 let iconName = isPlaying ? IconConstants.pauseIcon : IconConstants.playIcon
                 UIView.transition(with: self.playPauseButton,
-                                  duration: 0.5,
+                                  duration: AnimationConstants.defaultDuration,
                                   options: .transitionCrossDissolve,
                                   animations: {
                     self.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
@@ -291,7 +302,7 @@ private extension VideoPlayerViewController {
                         self.fadeOutControlView()
                     }
                 } else {
-                    // 暫停時：如果控制面板已隱藏或幾乎看不見，直接顯示控制面板
+                    // 暫停時：如果控制面板已隱藏，直接顯示控制面板
                     if self.controlView.isHidden {
                         self.showControlView()
                     } else {
@@ -306,7 +317,9 @@ private extension VideoPlayerViewController {
         viewModel.$progress
             .receive(on: DispatchQueue.main)
             .sink { [weak self] progress in
-                self?.progressSlider.value = Float(progress)
+                guard let self else { return }
+                
+                self.progressSlider.value = Float(progress)
             }
             .store(in: &cancellables)
         
@@ -314,11 +327,13 @@ private extension VideoPlayerViewController {
         viewModel.$videoTimeText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] videoTimeText in
+                guard let self else { return }
+
                 let fullText = "\(videoTimeText.current) / \(videoTimeText.duration)"
                 let attributedText = NSMutableAttributedString(string: fullText)
                 let currentTimeRange = (fullText as NSString).range(of: videoTimeText.current)
                 attributedText.addAttribute(.foregroundColor, value: UIColor.white, range: currentTimeRange)
-                self?.videoTimeLabel.attributedText = attributedText
+                self.videoTimeLabel.attributedText = attributedText
             }
             .store(in: &cancellables)
         
@@ -326,7 +341,9 @@ private extension VideoPlayerViewController {
         viewModel.$seekTimeText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] timeText in
-                self?.seekTimeLabel.text = timeText
+                guard let self else { return }
+
+                self.seekTimeLabel.text = timeText
             }
             .store(in: &cancellables)
         
@@ -335,7 +352,9 @@ private extension VideoPlayerViewController {
             .receive(on: DispatchQueue.main)
             .compactMap { $0 }
             .sink { [weak self] errorMessage in
-                self?.showErrorAlert(with: errorMessage)
+                guard let self else { return }
+
+                self.showErrorAlert(with: errorMessage)
             }
             .store(in: &cancellables)
         
@@ -343,7 +362,9 @@ private extension VideoPlayerViewController {
         viewModel.$media
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.tableView.reloadData()
+                guard let self else { return }
+
+                self.tableView.reloadData()
             }
             .store(in: &cancellables)
         
@@ -351,7 +372,8 @@ private extension VideoPlayerViewController {
         viewModel.$videoDetail
             .receive(on: DispatchQueue.main)
             .sink { [weak self] videoDetail in
-                guard let self = self, let videoDetail = videoDetail else { return }
+                guard let self, let videoDetail = videoDetail else { return }
+                self.resetShowMore()
                 self.videoTitleLabel.text = videoDetail.title
                 self.videoSubtitleLabel.text = videoDetail.subtitle
                 self.videoDescriptionLabel.text = videoDetail.description
@@ -359,11 +381,16 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
+        // 監聽當前影片index
         viewModel.$currentVideoIndex
             .receive(on: DispatchQueue.main)
             .sink { [weak self] index in
-                guard let self = self, let count = self.viewModel.media?.categories.first?.videos.count, index < count else { return }
-                self.tableView.selectRow(at: IndexPath(row: index, section: 0), animated: true, scrollPosition: .middle)
+                guard let self = self,
+                      let count = self.viewModel.media?.categories.first?.videos.count,
+                      index < count else { return }
+                self.tableView.selectRow(at: IndexPath(row: index, section: 0),
+                                          animated: true,
+                                          scrollPosition: .middle)
             }
             .store(in: &cancellables)
     }
@@ -373,7 +400,9 @@ private extension VideoPlayerViewController {
         // 監聽應用程式進入背景的通知
         NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
             .sink { [weak self] _ in
-                self?.handleAppDidEnterBackground()
+                guard let self else { return }
+
+                self.handleAppDidEnterBackground()
             }
             .store(in: &cancellables)
     }
@@ -417,7 +446,7 @@ private extension VideoPlayerViewController {
         controlView.fadeOut()
     }
     
-    // 取消淡出任务
+    // 取消淡出任務
     func cancelFadeOutTask() {
         fadeOutTask?.cancel()
         fadeOutTask = nil
@@ -435,9 +464,8 @@ private extension VideoPlayerViewController {
             } catch {
                 return
             }
-            // 在主執行緒上執行 UI 更新
-            await MainActor.run {
-                // 只有在播放且控制面板顯示時才淡出控制面板
+            await MainActor.run { [weak self] in
+                guard let self = self else { return }
                 if self.viewModel.isPlaying && !self.controlView.isHidden {
                     self.controlView.fadeOut()
                 }
@@ -450,32 +478,37 @@ private extension VideoPlayerViewController {
     func showErrorAlert(with message: String) {
         ErrorAlertManager.showErrorAlert(on: self, message: message)
     }
+    
+    // 重設ShowMore
+    func resetShowMore() {
+        isShowingMore = false
+        showMoreButton.setTitle(UIConstants.showMoreText, for: .normal)
+        videoDescriptionLabel.numberOfLines = 1
+    }
 }
 
 // MARK: - UITableViewDataSource
 extension VideoPlayerViewController: UITableViewDataSource {
-    // 回傳列表的分區數量
+    
     func numberOfSections(in tableView: UITableView) -> Int {
         return viewModel.media?.categories.count ?? 0
     }
     
-    // 回傳每個分區的列數
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return viewModel.media?.categories[safe: section]?.videos.count ?? 0
     }
     
-    // 回傳分區標題
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         return viewModel.media?.categories[safe: section]?.name
     }
     
-    // 設定每個儲存格
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "VideoListTableViewCell", for: indexPath) as? VideoListTableViewCell,
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "VideoListTableViewCell",
+                                                       for: indexPath) as? VideoListTableViewCell,
               let video = viewModel.media?.categories[safe: indexPath.section]?.videos[safe: indexPath.row] else {
             return UITableViewCell()
         }
-        
         cell.configure(with: video)
         return cell
     }
@@ -483,19 +516,10 @@ extension VideoPlayerViewController: UITableViewDataSource {
 
 // MARK: - UITableViewDelegate
 extension VideoPlayerViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView,
+                   didSelectRowAt indexPath: IndexPath) {
         guard indexPath.section == 0 else { return }
-        
-        // 更新播放器以播放選取的影片
         viewModel.updateVideo(at: indexPath.row)
         progressSlider.value = 0
-    }
-}
-
-// MARK: - UIInterfaceOrientationMask Extension
-extension UIInterfaceOrientationMask {
-    // 判斷方向是否為橫向
-    var isLandscape: Bool {
-        return self == .landscapeRight || self == .landscapeLeft || self == .landscape
     }
 }

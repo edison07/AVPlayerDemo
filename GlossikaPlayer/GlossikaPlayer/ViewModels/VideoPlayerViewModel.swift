@@ -21,7 +21,6 @@ final class VideoPlayerViewModel {
     @Published private(set) var videoDetail: VideoDetail?
     @Published private(set) var seekTimeText: String = TimeConstants.defaultTimeText
     @Published private(set) var currentVideoIndex = 0
-
     // MARK: - Private Properties
     private let player: AVPlayer
     private var playerLayer: AVPlayerLayer?
@@ -92,9 +91,11 @@ final class VideoPlayerViewModel {
             
             if currentTime == duration {
                 player.seek(to: .zero) { [weak self] finished in
+                    guard let self else { return }
+                    
                     if finished {
-                        self?.player.play()
-                        self?.isPlaying = true
+                        self.player.play()
+                        self.isPlaying = true
                     }
                 }
             } else {
@@ -174,7 +175,7 @@ private extension VideoPlayerViewModel {
         
         let interval = CMTime(seconds: TimeConstants.seekUpdateInterval, preferredTimescale: TimeConstants.timeScale)
         timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
+            guard let self else { return }
             let currentTime = time.seconds
             let duration = self.player.currentItem?.duration.seconds ?? 0
             
@@ -198,7 +199,7 @@ private extension VideoPlayerViewModel {
         // 監聽播放項目狀態變化
         playerItem.publisher(for: \.status)
             .sink { [weak self] status in
-                guard let self = self else { return }
+                guard let self else { return }
                 switch status {
                 case .readyToPlay:
                     self.isLoading = false
@@ -221,14 +222,17 @@ private extension VideoPlayerViewModel {
         // 監聽播放項目是否需要緩衝
         playerItem.publisher(for: \.isPlaybackLikelyToKeepUp)
             .sink { [weak self] isLikelyToKeepUp in
-                self?.isLoading = !isLikelyToKeepUp
+                guard let self else { return }
+                
+                self.isLoading = !isLikelyToKeepUp
             }
             .store(in: &cancellables)
         
         // 監聽播放結束通知
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
             .sink { [weak self] _ in
-                self?.nextVideo()
+                guard let self else { return }
+                self.nextVideo()
             }
             .store(in: &cancellables)
     }
@@ -247,7 +251,7 @@ private extension VideoPlayerViewModel {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    guard let self = self else { return }
+                    guard let self else { return }
                     self.isLoading = false
                     if case .failure(let error) = completion {
                         if let appError = error as? AppError {
@@ -258,7 +262,7 @@ private extension VideoPlayerViewModel {
                     }
                 },
                 receiveValue: { [weak self] mediaData in
-                    guard let self = self else { return }
+                    guard let self else { return }
                     self.media = mediaData
                     if let videos = mediaData.categories.first?.videos, !videos.isEmpty {
                         self.updateVideo(at: 0)

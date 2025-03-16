@@ -56,3 +56,11 @@ extension Collection {
         return indices.contains(index) ? self[index] : nil
     }
 }
+
+// MARK: - UIInterfaceOrientationMask Extension
+extension UIInterfaceOrientationMask {
+    // 判斷方向是否為橫向
+    var isLandscape: Bool {
+        return self == .landscapeRight || self == .landscapeLeft || self == .landscape
+    }
+}
