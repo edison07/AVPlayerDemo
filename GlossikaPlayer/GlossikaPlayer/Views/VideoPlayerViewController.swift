@@ -114,11 +114,13 @@ extension VideoPlayerViewController {
     
     // 點擊下一個影片按鈕
     @IBAction func didTapNextVideoButton(_ sender: UIButton) {
+        videoTimeLabel.isHidden = true
         viewModel.nextVideo()
     }
     
     // 點擊上一個影片按鈕
     @IBAction func didTapPrevVideoButton(_ sender: UIButton) {
+        videoTimeLabel.isHidden = true
         viewModel.prevVideo()
     }
     
@@ -264,21 +266,16 @@ private extension VideoPlayerViewController {
     
     // 設定資料綁定，監聽 ViewModel 中的狀態變化
     func setupBindings() {
-        // 監聽載入狀態變化
-        viewModel.$isLoading
+        // 監聽是否準備好播放
+        viewModel.$isReadyToPlay
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
+            .sink { [weak self] isReadyToPlay in
                 guard let self else { return }
                 
-                if isLoading {
-                    self.loadingIndicator.startAnimating()
-                    self.playPauseButton.alpha = 0
-                    self.playPauseButton.isUserInteractionEnabled = false
-                } else {
-                    self.loadingIndicator.stopAnimating()
-                    self.playPauseButton.alpha = 1
-                    self.playPauseButton.isUserInteractionEnabled = true
-                }
+                isReadyToPlay ? self.loadingIndicator.stopAnimating() : self.loadingIndicator.startAnimating()
+                self.playPauseButton.alpha = isReadyToPlay ? 1 : 0
+                self.playPauseButton.isUserInteractionEnabled = isReadyToPlay
+                self.progressSlider.isHidden = !isReadyToPlay
             }
             .store(in: &cancellables)
         
@@ -334,6 +331,7 @@ private extension VideoPlayerViewController {
                 let currentTimeRange = (fullText as NSString).range(of: videoTimeText.current)
                 attributedText.addAttribute(.foregroundColor, value: UIColor.white, range: currentTimeRange)
                 self.videoTimeLabel.attributedText = attributedText
+                self.videoTimeLabel.isHidden = false
             }
             .store(in: &cancellables)
         
@@ -519,6 +517,7 @@ extension VideoPlayerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView,
                    didSelectRowAt indexPath: IndexPath) {
         guard indexPath.section == 0 else { return }
+        videoTimeLabel.isHidden = true
         viewModel.updateVideo(at: indexPath.row)
         progressSlider.value = 0
     }

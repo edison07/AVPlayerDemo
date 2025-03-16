@@ -13,7 +13,7 @@ final class VideoPlayerViewModel {
     typealias VideoTime = (current: String, duration: String)
     // MARK: - Published Properties
     @Published private(set) var isPlaying: Bool = false
-    @Published private(set) var isLoading: Bool = false
+    @Published private(set) var isReadyToPlay: Bool = false
     @Published private(set) var progress: Double = 0.0
     @Published private(set) var videoTimeText: VideoTime = (TimeConstants.defaultTimeText, TimeConstants.defaultTimeText)
     @Published private(set) var errorMessage: String?
@@ -111,14 +111,16 @@ final class VideoPlayerViewModel {
     }
     
     func seek(to progress: Double) {
-        Task {
-            guard let playerItem = player.currentItem, playerItem.duration.seconds > 0 else { return }
+        guard let playerItem = player.currentItem, playerItem.duration.seconds > 0 else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.isSeeking = false }
             let durationSeconds = playerItem.duration.seconds
             let newTimeSeconds = progress * durationSeconds
             let targetTime = CMTime(seconds: newTimeSeconds, preferredTimescale: TimeConstants.timeScale)
             
             _ = await player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
-            isSeeking = false
         }
     }
     
@@ -202,29 +204,20 @@ private extension VideoPlayerViewModel {
                 guard let self else { return }
                 switch status {
                 case .readyToPlay:
-                    self.isLoading = false
+                    self.isReadyToPlay = true
                     self.errorMessage = nil
                     guard let videoDetail = media?.categories.first?.videos[safe: currentVideoIndex] else { return }
                     self.videoDetail = (title: videoDetail.title, subtitle: videoDetail.subtitle, videoDetail.description)
                 case .failed:
-                    self.isLoading = false
+                    self.isReadyToPlay = false
                     if let error = playerItem.error {
                         self.errorMessage = error.localizedDescription
                     } else {
                         self.errorMessage = "影片載入失敗"
                     }
                 default:
-                    self.isLoading = true
+                    self.isReadyToPlay = false
                 }
-            }
-            .store(in: &cancellables)
-        
-        // 監聽播放項目是否需要緩衝
-        playerItem.publisher(for: \.isPlaybackLikelyToKeepUp)
-            .sink { [weak self] isLikelyToKeepUp in
-                guard let self else { return }
-                
-                self.isLoading = !isLikelyToKeepUp
             }
             .store(in: &cancellables)
         
@@ -246,13 +239,11 @@ private extension VideoPlayerViewModel {
     }
     
     func fetchMediaData() {
-        isLoading = true
         mediaService.fetchMedia()
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     guard let self else { return }
-                    self.isLoading = false
                     if case .failure(let error) = completion {
                         if let appError = error as? AppError {
                             self.errorMessage = appError.localizedDescription
