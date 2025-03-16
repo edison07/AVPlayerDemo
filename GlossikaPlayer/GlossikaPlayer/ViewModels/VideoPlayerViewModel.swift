@@ -9,16 +9,19 @@ import AVKit
 import Combine
 
 final class VideoPlayerViewModel {
+    typealias VideoDetail = (title: String, subtitle: String, description: String)
+    typealias VideoTime = (current: String, duration: String)
     // MARK: - Published Properties
     @Published private(set) var isPlaying: Bool = false
     @Published private(set) var isLoading: Bool = false
     @Published private(set) var progress: Double = 0.0
-    @Published private(set) var currentTimeText: String = "\(TimeConstants.defaultTimeText) / \(TimeConstants.defaultTimeText)"
+    @Published private(set) var videoTimeText: VideoTime = (TimeConstants.defaultTimeText, TimeConstants.defaultTimeText)
     @Published private(set) var errorMessage: String?
     @Published private(set) var media: VideoPlayerModel.MediaJSON?
-    @Published private(set) var controlsEnabled: Bool = true
-    @Published var seekTimeText: String = TimeConstants.defaultTimeText
-    
+    @Published private(set) var videoDetail: VideoDetail?
+    @Published private(set) var seekTimeText: String = TimeConstants.defaultTimeText
+    @Published private(set) var currentVideoIndex = 0
+
     // MARK: - Private Properties
     private let player: AVPlayer
     private var playerLayer: AVPlayerLayer?
@@ -61,9 +64,16 @@ final class VideoPlayerViewModel {
         playerLayer?.frame = frame
     }
     
-    func updateVideo(with url: URL) {
+    func updateVideo(at index: Int) {
+        currentVideoIndex = index
+        guard let video = media?.categories.first?.videos[index],
+              let urlString = video.sources.first,
+              let videoURL = URL(string: urlString) else {
+            self.errorMessage = "影片載入失敗"
+            return
+        }
         pause()
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(url: videoURL)
         let newItem = AVPlayerItem(asset: asset)
         player.replaceCurrentItem(with: newItem)
         
@@ -111,8 +121,22 @@ final class VideoPlayerViewModel {
         }
     }
     
+    func nextVideo() {
+        guard let count = media?.categories.first?.videos.count, count > 0 else { return }
+        
+        let index = (currentVideoIndex + 1) % count
+        updateVideo(at: index)
+    }
+    
+    func prevVideo() {
+        guard let count = media?.categories.first?.videos.count, count > 0 else { return }
+        
+        let index = (currentVideoIndex - 1 + count) % count
+        updateVideo(at: index)
+    }
+    
     func skipForward(by seconds: Double = TimeConstants.defaultSkipInterval) {
-        guard let durationSeconds = player.currentItem?.duration.seconds else { return }
+        guard let durationSeconds = player.currentItem?.duration.seconds, durationSeconds.isFinite else { return }
         let currentTime = player.currentTime().seconds
         let newTime = min(currentTime + seconds, durationSeconds)
         player.seek(to: CMTime(seconds: newTime, preferredTimescale: TimeConstants.timeScale))
@@ -128,28 +152,45 @@ final class VideoPlayerViewModel {
         player.rate = rate
     }
     
-    func formattedTime(for progress: Double) -> String {
-        guard let duration = player.currentItem?.duration.seconds, duration > 0 else {
-            return TimeConstants.defaultTimeText
+    func updateProgress(to progress: Double) {
+        guard let duration = player.currentItem?.duration.seconds, duration > 0, duration.isFinite else {
+            seekTimeText = TimeConstants.defaultTimeText
+            return
         }
         let newTime = progress * duration
-        return formatTime(newTime)
+        seekTimeText = formatTime(newTime)
     }
 }
 
 // MARK: - Private Methods
 private extension VideoPlayerViewModel {
+    func setupPlayerSettings() {
+        player.automaticallyWaitsToMinimizeStalling = true
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+    }
+    
     func setupTimeObserver() {
+        removeTimeObserver()
+        
         let interval = CMTime(seconds: TimeConstants.seekUpdateInterval, preferredTimescale: TimeConstants.timeScale)
         timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let currentTime = time.seconds
             let duration = self.player.currentItem?.duration.seconds ?? 0
-            self.currentTimeText = "\(self.formatTime(currentTime)) / \(self.formatTime(duration))"
-            guard !self.isSeeking else { return }
-            if duration > 0 {
-                self.progress = currentTime / duration
+            
+            // 避免處理無效的時間
+            if currentTime.isFinite && duration.isFinite && duration > 0 {
+                self.videoTimeText = (self.formatTime(currentTime), self.formatTime(duration))
+                guard !self.isSeeking else { return }
+                self.progress = min(currentTime / duration, 1.0)
             }
+        }
+    }
+    
+    func removeTimeObserver() {
+        if let token = timeObserverToken {
+            player.removeTimeObserver(token)
+            timeObserverToken = nil
         }
     }
     
@@ -162,10 +203,10 @@ private extension VideoPlayerViewModel {
                 case .readyToPlay:
                     self.isLoading = false
                     self.errorMessage = nil
-                    self.controlsEnabled = true
+                    guard let videoDetail = media?.categories.first?.videos[safe: currentVideoIndex] else { return }
+                    self.videoDetail = (title: videoDetail.title, subtitle: videoDetail.subtitle, videoDetail.description)
                 case .failed:
                     self.isLoading = false
-                    self.controlsEnabled = false
                     if let error = playerItem.error {
                         self.errorMessage = error.localizedDescription
                     } else {
@@ -187,14 +228,14 @@ private extension VideoPlayerViewModel {
         // 監聽播放結束通知
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
             .sink { [weak self] _ in
-                self?.isPlaying = false
+                self?.nextVideo()
             }
             .store(in: &cancellables)
     }
     
     // 格式化時間為分:秒格式
     func formatTime(_ seconds: Double) -> String {
-        guard !seconds.isNaN else { return TimeConstants.defaultTimeText }
+        guard !seconds.isNaN && seconds.isFinite else { return TimeConstants.defaultTimeText }
         let minutes = Int(seconds) / 60
         let seconds = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, seconds)
@@ -219,23 +260,18 @@ private extension VideoPlayerViewModel {
                 receiveValue: { [weak self] mediaData in
                     guard let self = self else { return }
                     self.media = mediaData
-                    if let firstCategory = mediaData.categories.first,
-                       let firstVideo = firstCategory.videos.first,
-                       let urlString = firstVideo.sources.first,
-                       let videoURL = URL(string: urlString) {
-                        self.updateVideo(with: videoURL)
+                    if let videos = mediaData.categories.first?.videos, !videos.isEmpty {
+                        self.updateVideo(at: 0)
+                    } else {
+                        self.errorMessage = "沒有可用的影片"
                     }
-                    self.errorMessage = nil
                 }
             )
             .store(in: &cancellables)
     }
     
     func resetObservers(for playerItem: AVPlayerItem) {
-        if let token = timeObserverToken {
-            player.removeTimeObserver(token)
-            timeObserverToken = nil
-        }
+        removeTimeObserver()
         observePlayerItem(playerItem)
         setupTimeObserver()
     }

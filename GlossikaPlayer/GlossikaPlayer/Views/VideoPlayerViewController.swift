@@ -11,25 +11,31 @@ import Combine
 
 final class VideoPlayerViewController: UIViewController {
     
+    // MARK: - IBOutlets
     @IBOutlet weak var playerView: UIView!
     @IBOutlet weak var controlView: UIView!
     @IBOutlet weak var seekBackgroundView: UIView!
     
     @IBOutlet weak var progressSlider: UISlider!
     
-    @IBOutlet weak var durationTimeLabel: UILabel!
+    @IBOutlet weak var videoTimeLabel: UILabel!
     @IBOutlet weak var seekTimeLabel: UILabel!
     
     @IBOutlet weak var fullScreenButton: UIButton!
     @IBOutlet weak var playPauseButton: UIButton!
-    @IBOutlet weak var skipForwardButton: UIButton!
-    @IBOutlet weak var skipBackwardButton: UIButton!
+    @IBOutlet weak var nextVideoButton: UIButton!
+    @IBOutlet weak var prevVideoButton: UIButton!
     @IBOutlet weak var playRateButton: UIButton!
+    @IBOutlet weak var showMoreButton: UIButton!
     
+    @IBOutlet weak var videoTitleLabel: UILabel!
+    @IBOutlet weak var videoSubtitleLabel: UILabel!
+    @IBOutlet weak var videoDescriptionLabel: UILabel!
     @IBOutlet weak var loadingIndicator: UIActivityIndicatorView!
     
     @IBOutlet weak var tableView: UITableView!
     
+    // MARK: - Properties
     private var viewModel = VideoPlayerViewModel(/*mediaService: MockMediaService()*/)
     private var cancellables = Set<AnyCancellable>()
     // 用於控制控制面板自動淡出的任務
@@ -37,14 +43,15 @@ final class VideoPlayerViewController: UIViewController {
     // 播放速度選項
     private let playbackRates: [Float] = [0.5, 1.0, 1.5, 2.0]
     private var currentRateIndex: Int = 1 // 默認 1.0x
+    private var isShowingMore: Bool = false
     
+    // MARK: - Lifecycle Methods
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupBindings()
         setupNotifications()
         setupGestures()
-        // 將播放器層附加到播放器視圖上
         viewModel.attachPlayerLayer(to: playerView)
         viewModel.setupPlayer()
     }
@@ -65,10 +72,27 @@ final class VideoPlayerViewController: UIViewController {
         super.viewDidLayoutSubviews()
         viewModel.updatePlayerLayerFrame(to: playerView.bounds)
     }
+    
+    deinit {
+        fadeOutTask?.cancel()
+        fadeOutTask = nil
+        cancellables.removeAll()
+    }
 }
 
 // MARK: - IBActions
 extension VideoPlayerViewController {
+    @IBAction func didTapShowMoreButton(_ sender: UIButton) {
+        isShowingMore.toggle()
+        let title = isShowingMore ? "顯示更少.." : "顯示更多.."
+        showMoreButton.setTitle(title, for: .normal)
+        
+        UIView.animate(withDuration: AnimationConstants.defaultDuration) {
+            self.videoDescriptionLabel.numberOfLines = self.isShowingMore ? 0 : 1
+            self.view.layoutIfNeeded()
+        }
+    }
+    
     // 點擊播放器視圖時顯示控制面板
     @IBAction func didTapPlayerView(_ sender: UITapGestureRecognizer) {
         showControlView()
@@ -84,16 +108,14 @@ extension VideoPlayerViewController {
         viewModel.togglePlayPause()
     }
     
-    // 點擊快轉按鈕
-    @IBAction func didTapSkipForwardButton(_ sender: UIButton) {
-        viewModel.skipForward()
-        fadeOutControlView()
+    // 點擊下一個影片按鈕
+    @IBAction func didTapNextVideoButton(_ sender: UIButton) {
+        viewModel.nextVideo()
     }
     
-    // 點擊倒轉按鈕
-    @IBAction func didTapSkipBackwardButton(_ sender: UIButton) {
-        viewModel.skipBackward()
-        fadeOutControlView()
+    // 點擊上一個影片按鈕
+    @IBAction func didTapPrevVideoButton(_ sender: UIButton) {
+        viewModel.prevVideo()
     }
     
     // 新增：點擊播放速度按鈕
@@ -115,24 +137,35 @@ extension VideoPlayerViewController {
     @IBAction func progressSliderTouchDown(_ sender: UISlider) {
         seekBackgroundView.isHidden = false
         viewModel.isSeeking = true
+        
+        // 取消可能存在的淡出任務
+        cancelFadeOutTask()
     }
     
     // 進度條釋放時隱藏拖曳背景視圖並跳轉到選擇的時間點
     @IBAction func progressSliderTouchUpInside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
+        
+        // 如果正在播放，重新啟動淡出任務
+        if viewModel.isPlaying {
+            fadeOutControlView()
+        }
     }
     
-    // 進度條在外部釋放時的處理，與內部釋放相同
     @IBAction func progressSliderTouchUpOutside(_ sender: UISlider) {
         seekBackgroundView.isHidden = true
         viewModel.seek(to: Double(sender.value))
+        
+        // 如果正在播放，重新啟動淡出任務
+        if viewModel.isPlaying {
+            fadeOutControlView()
+        }
     }
     
     // 進度條值變化時更新顯示的時間文字
     @IBAction func progressSliderValueChanged(_ sender: UISlider) {
-        let formattedTime = viewModel.formattedTime(for: Double(sender.value))
-        viewModel.seekTimeText = formattedTime
+        viewModel.updateProgress(to: Double(sender.value))
     }
 }
 
@@ -205,18 +238,18 @@ private extension VideoPlayerViewController {
     func setupUI() {
         tableView.delegate = self
         tableView.dataSource = self
-        durationTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
+        videoTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekTimeLabel.font = .monospacedDigitSystemFont(ofSize: 14, weight: .medium)
         seekBackgroundView.addRoundedCorners(radius: 15)
+        controlView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         
         let configuration = UIImage.SymbolConfiguration(pointSize: 15)
         let image = UIImage(systemName: "circle.fill", withConfiguration: configuration)
         progressSlider.setThumbImage(image, for: .normal)
         progressSlider.setThumbImage(image, for: .highlighted)
         
-        playPauseButton.setImage(UIImage(systemName: IconConstants.playIcon), for: .normal)
-        skipForwardButton.setImage(UIImage(systemName: IconConstants.skipForwardIcon), for: .normal)
-        skipBackwardButton.setImage(UIImage(systemName: IconConstants.skipBackwardIcon), for: .normal)
+        // 初始化播放速度按钮
+        updatePlayRateButtonTitle()
     }
     
     // 設定資料綁定，監聽 ViewModel 中的狀態變化
@@ -227,15 +260,13 @@ private extension VideoPlayerViewController {
             .sink { [weak self] isLoading in
                 guard let self = self else { return }
                 if isLoading {
-                    // 開始載入時顯示載入指示器並隱藏控制面板
                     self.loadingIndicator.startAnimating()
-                    self.hideControlView()
+                    self.playPauseButton.alpha = 0
+                    self.playPauseButton.isUserInteractionEnabled = false
                 } else {
-                    // 載入完成時隱藏載入指示器，如果影片未播放則顯示控制面板
                     self.loadingIndicator.stopAnimating()
-                    if !self.viewModel.isPlaying {
-                        self.showControlView()
-                    }
+                    self.playPauseButton.alpha = 1
+                    self.playPauseButton.isUserInteractionEnabled = true
                 }
             }
             .store(in: &cancellables)
@@ -246,8 +277,14 @@ private extension VideoPlayerViewController {
             .sink { [weak self] isPlaying in
                 guard let self = self else { return }
                 // 根據播放狀態更新播放/暫停按鈕圖示
-                let iconName = isPlaying ? "pause.fill" : "play.fill"
-                self.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
+                let iconName = isPlaying ? IconConstants.pauseIcon : IconConstants.playIcon
+                UIView.transition(with: self.playPauseButton,
+                                  duration: 0.5,
+                                  options: .transitionCrossDissolve,
+                                  animations: {
+                    self.playPauseButton.setImage(UIImage(systemName: iconName), for: .normal)
+                }, completion: nil)
+
                 if isPlaying {
                     // 播放時如果尚未啟動淡出任務，開始淡出控制面板
                     if self.fadeOutTask == nil {
@@ -255,14 +292,11 @@ private extension VideoPlayerViewController {
                     }
                 } else {
                     // 暫停時：如果控制面板已隱藏或幾乎看不見，直接顯示控制面板
-                    if self.controlView.isHidden || self.controlView.alpha < 0.1 {
+                    if self.controlView.isHidden {
                         self.showControlView()
                     } else {
                         // 取消正在進行的淡出任務
-                        if let task = self.fadeOutTask {
-                            task.cancel()
-                            self.fadeOutTask = nil
-                        }
+                        self.cancelFadeOutTask()
                     }
                 }
             }
@@ -277,10 +311,14 @@ private extension VideoPlayerViewController {
             .store(in: &cancellables)
         
         // 監聽目前時間文字變化，更新時間標籤
-        viewModel.$currentTimeText
+        viewModel.$videoTimeText
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] timeText in
-                self?.durationTimeLabel.text = timeText
+            .sink { [weak self] videoTimeText in
+                let fullText = "\(videoTimeText.current) / \(videoTimeText.duration)"
+                let attributedText = NSMutableAttributedString(string: fullText)
+                let currentTimeRange = (fullText as NSString).range(of: videoTimeText.current)
+                attributedText.addAttribute(.foregroundColor, value: UIColor.white, range: currentTimeRange)
+                self?.videoTimeLabel.attributedText = attributedText
             }
             .store(in: &cancellables)
         
@@ -295,10 +333,9 @@ private extension VideoPlayerViewController {
         // 監聽錯誤訊息變化，顯示錯誤提示
         viewModel.$errorMessage
             .receive(on: DispatchQueue.main)
+            .compactMap { $0 }
             .sink { [weak self] errorMessage in
-                if let message = errorMessage {
-                    self?.showErrorAlert(with: message)
-                }
+                self?.showErrorAlert(with: errorMessage)
             }
             .store(in: &cancellables)
         
@@ -310,21 +347,23 @@ private extension VideoPlayerViewController {
             }
             .store(in: &cancellables)
         
-        // 監聽控制項啟用狀態變化，更新 UI 元素的啟用狀態
-        viewModel.$controlsEnabled
+        // 監聽影片詳細資訊，更新 UI 元素
+        viewModel.$videoDetail
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] enabled in
-                self?.playPauseButton.isEnabled = enabled
-                self?.progressSlider.isEnabled = enabled
-                self?.fullScreenButton.isEnabled = enabled
-                self?.skipForwardButton.isEnabled = enabled
-                self?.skipBackwardButton.isEnabled = enabled
-                self?.playRateButton.isEnabled = enabled
-                // 如果控制項被停用，重設播放按鈕圖示和進度條
-                if !enabled {
-                    self?.playPauseButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-                    self?.progressSlider.value = 0
-                }
+            .sink { [weak self] videoDetail in
+                guard let self = self, let videoDetail = videoDetail else { return }
+                self.videoTitleLabel.text = videoDetail.title
+                self.videoSubtitleLabel.text = videoDetail.subtitle
+                self.videoDescriptionLabel.text = videoDetail.description
+                self.showMoreButton.isHidden = !self.videoDescriptionLabel.isTextExceedOneLine
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$currentVideoIndex
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] index in
+                guard let self = self, let count = self.viewModel.media?.categories.first?.videos.count, index < count else { return }
+                self.tableView.selectRow(at: IndexPath(row: index, section: 0), animated: true, scrollPosition: .middle)
             }
             .store(in: &cancellables)
     }
@@ -340,7 +379,7 @@ private extension VideoPlayerViewController {
     }
     
     // 處理應用程式進入背景的事件
-    @objc func handleAppDidEnterBackground() {
+    func handleAppDidEnterBackground() {
         // 進入背景時暫停播放並顯示控制面板
         viewModel.pause()
         showControlView()
@@ -348,20 +387,6 @@ private extension VideoPlayerViewController {
     
     // 根據螢幕方向更新全螢幕按鈕圖示和列表顯示狀態
     func updateFullScreenButtonIcon(for orientation: UIInterfaceOrientationMask) {
-        // 定義橫向和直向模式下的按鈕尺寸
-        let buttonSizes: (playButton: CGFloat, skipButton: CGFloat) = orientation.isLandscape ?
-        (playButton: 50, skipButton: 40) :
-        (playButton: 30, skipButton: 20)
-        
-        // 設定播放/暫停按鈕的尺寸
-        let playButtonConfig = UIImage.SymbolConfiguration(pointSize: buttonSizes.playButton)
-        playPauseButton.setPreferredSymbolConfiguration(playButtonConfig, forImageIn: .normal)
-        
-        // 設定快轉/倒轉按鈕的尺寸
-        let skipButtonConfig = UIImage.SymbolConfiguration(pointSize: buttonSizes.skipButton)
-        skipForwardButton.setPreferredSymbolConfiguration(skipButtonConfig, forImageIn: .normal)
-        skipBackwardButton.setPreferredSymbolConfiguration(skipButtonConfig, forImageIn: .normal)
-        
         // 根據方向設定 UI
         if orientation.isLandscape {
             // 橫向模式：顯示縮小圖示
@@ -374,18 +399,10 @@ private extension VideoPlayerViewController {
     
     // 顯示控制面板
     func showControlView() {
-        // 如果正在載入，不顯示控制面板
-        if loadingIndicator.isAnimating {
-            return
-        }
-        
         // 取消可能存在的淡出任務
-        if let task = fadeOutTask {
-            task.cancel()
-            fadeOutTask = nil
-        }
+        cancelFadeOutTask()
         // 淡入顯示控制面板
-        controlView.fadeIn(targetAlpha: 0.45)
+        controlView.fadeIn(targetAlpha: 1)
         // 如果影片正在播放，啟動淡出任務
         if viewModel.isPlaying {
             fadeOutControlView()
@@ -395,21 +412,21 @@ private extension VideoPlayerViewController {
     // 隱藏控制面板
     func hideControlView() {
         // 取消可能存在的淡出任務
-        if let task = fadeOutTask {
-            task.cancel()
-            fadeOutTask = nil
-        }
+        cancelFadeOutTask()
         // 淡出隱藏控制面板
         controlView.fadeOut()
+    }
+    
+    // 取消淡出任务
+    func cancelFadeOutTask() {
+        fadeOutTask?.cancel()
+        fadeOutTask = nil
     }
     
     // 設定控制面板的自動淡出
     func fadeOutControlView() {
         // 取消可能存在的淡出任務
-        if let task = fadeOutTask {
-            task.cancel()
-            fadeOutTask = nil
-        }
+        cancelFadeOutTask()
         // 建立新的淡出任務
         fadeOutTask = Task {
             do {
@@ -444,23 +461,22 @@ extension VideoPlayerViewController: UITableViewDataSource {
     
     // 回傳每個分區的列數
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.media?.categories[section].videos.count ?? 0
+        return viewModel.media?.categories[safe: section]?.videos.count ?? 0
     }
     
     // 回傳分區標題
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return viewModel.media?.categories[section].name
+        return viewModel.media?.categories[safe: section]?.name
     }
     
     // 設定每個儲存格
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row] else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "VideoListTableViewCell", for: indexPath) as? VideoListTableViewCell,
+              let video = viewModel.media?.categories[safe: indexPath.section]?.videos[safe: indexPath.row] else {
             return UITableViewCell()
         }
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "VideoListTableViewCell", for: indexPath) as! VideoListTableViewCell
         cell.configure(with: video)
-        
         return cell
     }
 }
@@ -468,12 +484,10 @@ extension VideoPlayerViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension VideoPlayerViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let video = viewModel.media?.categories[indexPath.section].videos[indexPath.row],
-              let urlString = video.sources.first,
-              let videoURL = URL(string: urlString) else { return }
+        guard indexPath.section == 0 else { return }
         
         // 更新播放器以播放選取的影片
-        viewModel.updateVideo(with: videoURL)
+        viewModel.updateVideo(at: indexPath.row)
         progressSlider.value = 0
     }
 }
