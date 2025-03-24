@@ -33,7 +33,7 @@
 1. **複製專案：**
 
    ```bash
-   git clone https://github.com/yourusername/GlossikaPlayer.git
+   git clone https://github.com/edison07/GlossikaPlayer.git
    ```
 
 2. **打開專案：**
