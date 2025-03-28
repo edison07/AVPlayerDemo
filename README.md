@@ -1,10 +1,10 @@
-# GlossikaPlayer - 播放範例
+# AVPlayerDemo - 播放範例
 
 這個專案提供一個簡單的播放畫面，利用 AVPlayer 播放影片，並結合 UIKit 與 Combine 管理播放狀態與進度更新。適用於 iOS 16.6 以上，僅供展示播放功能使用。
 
 ## 介紹
 
-**GlossikaPlayer 播放畫面** 為單一畫面應用，提供基本的影片播放功能，並新增了以下功能：
+**AVPlayerDemo 播放畫面** 為單一畫面應用，提供基本的影片播放功能，並新增了以下功能：
 - **播放功能：**  
   使用 **AVPlayer** 播放影片，搭配播放/暫停按鈕控制播放狀態，並利用 Combine 更新播放進度。
 - **全螢幕功能：**  
@@ -33,7 +33,7 @@
 1. **複製專案：**
 
    ```bash
-   git clone https://github.com/edison07/GlossikaPlayer.git
+   git clone https://github.com/edison07/AVPlayerDemo.git
    ```
 
 2. **打開專案：**
