@@ -1,65 +1,81 @@
-# AVPlayerDemo - 播放範例
+# AVPlayerDemo - Playback Example
 
-這個專案提供一個簡單的播放畫面，利用 AVPlayer 播放影片，並結合 UIKit 與 Combine 管理播放狀態與進度更新。適用於 iOS 16.6 以上，僅供展示播放功能使用。
+A demo iOS app that showcases video playback using **AVPlayer**, integrated with **UIKit** and **Combine**.  
+This project demonstrates how to implement core playback features including fullscreen toggle, progress control, speed adjustment, and more.
 
-## 介紹
+✅ Built for iOS 16.6+, using Swift 5.7 and Xcode 14+
 
-**AVPlayerDemo 播放畫面** 為單一畫面應用，提供基本的影片播放功能，並新增了以下功能：
-- **播放功能：**  
-  使用 **AVPlayer** 播放影片，搭配播放/暫停按鈕控制播放狀態，並利用 Combine 更新播放進度。
-- **全螢幕功能：**  
-  提供全螢幕切換按鈕，可手動切換全螢幕/一般模式，並支援自動旋轉：  
-  - 往上滑動可進入全螢幕模式  
-  - 往下滑動則退出全螢幕模式
-- **進度控制：**  
-  使用滑桿調整影片進度，同時顯示目前播放時間與影片總長。
-- **播放速度調整：**  
-  新增播放速度按鈕，使用者可以循環切換不同的播放速度（例如 0.5x, 1.0x, 1.5x, 2.0x）。
-- **影片詳細資訊：**  
-  畫面上展示影片標題、副標題與詳細描述，並提供「顯示更多／顯示更少」的功能，根據內容長度動態調整顯示行數。
-- **切換上下影片按鈕：**  
-  新增上一個影片與下一個影片的按鈕，方便使用者快速切換影片。
+---
 
-此專案旨在展示如何整合 AVPlayer、UIKit 與 Combine 的基本用法，並提供一系列額外的播放與控制功能，供開發者參考與學習。
+## ✨ Features
 
-## 前置需求
+- 🎬 **Video Playback** – AVPlayer-based video playback with play/pause control  
+- 🖥️ **Fullscreen Toggle** – Button and gesture to toggle fullscreen  
+- ⏱️ **Progress Control** – Slider for seeking and time display  
+- 🐢 **Speed Control** – Switch between 0.5x, 1x, 1.5x, and 2x  
+- 📄 **Video Metadata** – Show title, subtitle, and expandable description  
+- 🎞️ **Previous/Next Video** – Switch between videos with navigation buttons  
 
-- **開發工具：** Xcode 14 以上
-- **目標平台：** iOS 16.6 以上
-- **Swift 版本：** Swift 5.7 或更新版本
+---
 
-## 建置與運行
+## 🛠 Requirements
 
-1. **複製專案：**
+- Xcode 14 or later  
+- iOS 16.6 or later  
+- Swift 5.7 or later  
 
-   ```bash
-   git clone https://github.com/edison07/AVPlayerDemo.git
-   ```
+---
 
-2. **打開專案：**
+## 🚀 Getting Started
 
-   使用 Xcode 開啟 `GlossikaPlayer.xcodeproj`。
+### 1. Clone the Repository
 
-3. **運行專案：**
+Run the following command in your terminal:
 
-   選擇 iOS 模擬器（例如 iPhone 16），然後按下 Run 按鈕，即可看到播放畫面及所有新增的功能。
+`git clone https://github.com/edison07/AVPlayerDemo.git`
 
-## 使用說明
+### 2. Open the Project
 
-- **播放/暫停：**  
-  點擊畫面上的播放/暫停按鈕即可切換播放狀態。
-  
-- **全螢幕切換：**  
-  點擊全螢幕按鈕或透過上滑／下滑手勢，即可切換全螢幕與一般模式。
-  
-- **進度控制：**  
-  拖動進度滑桿可調整影片播放進度，並顯示當前播放時間與影片總長。
-  
-- **播放速度調整：**  
-  點擊播放速度按鈕可循環切換不同的播放速度。
-  
-- **影片詳細資訊：**  
-  影片標題、副標題與描述資訊會顯示在畫面上，點擊「顯示更多」按鈕可展開全部描述，再次點擊則收合內容。
-  
-- **切換影片：**  
-  點擊上一個或下一個影片按鈕，可快速切換影片播放。
+Open the project in Xcode by double-clicking the file:
+
+`AVPlayerDemo.xcodeproj`
+
+### 3. Run the App
+
+Select a simulator (e.g. iPhone 16), then press `Command + R` to build and run the app.
+
+---
+
+## 📚 Usage
+
+- **Play/Pause** – Tap to toggle playback  
+- **Fullscreen Toggle** – Tap the fullscreen button or swipe up/down  
+- **Seek Video** – Drag the slider to change the video position  
+- **Change Speed** – Tap to cycle through available speeds  
+- **Show More/Less** – Expand or collapse the description text  
+- **Switch Videos** – Use the previous/next buttons to navigate  
+
+---
+
+## 🧱 Tech Stack
+
+- AVFoundation – Media playback with AVPlayer  
+- Combine – Reactive data binding and updates  
+- UIKit – User interface implementation  
+- Auto Layout – Constraint-based UI layout  
+- MVVM – Design pattern separating UI and logic  
+
+---
+
+## 👨‍💻 Author
+
+**Edison**  
+GitHub: [https://github.com/edison07](https://github.com/edison07)
+
+If you find this project useful, feel free to star ⭐ it or contribute 🙌
+
+---
+
+## 📄 License
+
+MIT License. See the `LICENSE` file for details.
